@@ -28,11 +28,7 @@ export default function PaymentPage() {
   });
 
   // Dynamic cart items with state management
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'Cotton College T-Shirt', price: 299, quantity: 2, size: 'L' },
-    { id: 2, name: 'Premium Backpack', price: 899, quantity: 1 },
-    { id: 3, name: 'Gel Pen Set', price: 199, quantity: 1 },
-  ]);
+  const [cartItems, setCartItems] = useState([]);
 
   // Dynamic pricing calculations
   const [pricing, setPricing] = useState({
@@ -151,7 +147,7 @@ export default function PaymentPage() {
   const availableItems = [
     { id: 4, name: 'Notebook Set', price: 149 },
     { id: 5, name: 'Water Bottle', price: 299 },
-    { id: 6, name: 'College Hoodie', price: 699, size: 'M' },
+    { id: 6, name: 'College Hoodie', price: 699},
   ];
 
   return (

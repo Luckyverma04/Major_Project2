@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Award, Users, Heart, Clock, Star, Truck } from "lucide-react";
 
 export default function About() {
@@ -13,7 +12,7 @@ export default function About() {
                             src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=500&fit=crop"
                             alt="Patel Products family business"
                             className="w-full rounded-2xl shadow-lg"
-                        />
+                />
                     </div>
                     <div className="md:w-7/12 lg:w-6/12">
                         <h1 className="text-3xl text-gray-900 font-bold md:text-5xl mb-6">
@@ -31,15 +30,15 @@ export default function About() {
                         </p>
                         
                         <div className="mt-8">
-                            <Link
-                                to="/products"
+                            <button
+                                onClick={() => window.location.href = "/#featured-products"}
                                 className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300"
                             >
                                 Explore Our Products
                                 <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                 </svg>
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -160,43 +159,6 @@ export default function About() {
                     </div>
                 </div>
 
-                {/* Product Categories Showcase */}
-                <div className="mb-16">
-                    <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">What We Offer</h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">🍽️</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Kitchen & Dining</h3>
-                            <p className="text-gray-600 text-sm">Premium kitchenware, cookware, and dining essentials for every home.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">🏠</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Home Decor</h3>
-                            <p className="text-gray-600 text-sm">Beautiful decorative items to make your house feel like home.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">🎨</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Handcrafted Items</h3>
-                            <p className="text-gray-600 text-sm">Unique handmade products showcasing traditional craftsmanship.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">🌱</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Organic Products</h3>
-                            <p className="text-gray-600 text-sm">Natural and organic items for a healthier lifestyle.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">📦</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Storage Solutions</h3>
-                            <p className="text-gray-600 text-sm">Smart storage options to organize your space efficiently.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg border hover:shadow-xl transition-shadow">
-                            <div className="text-3xl mb-4">🏺</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Traditional Items</h3>
-                            <p className="text-gray-600 text-sm">Cultural and heritage products preserving traditional values.</p>
-                        </div>
-                    </div>
-                </div>
-
                 {/* CTA Section */}
                 <div className="text-center bg-gradient-to-br from-indigo-50 to-blue-100 rounded-2xl p-12">
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">Experience the Patel Difference</h2>
@@ -205,18 +167,18 @@ export default function About() {
                         for quality, reliability, and exceptional service.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            to="/products"
+                        <button
+                            onClick={() => window.location.href = "/#featured-products"}
                             className="inline-flex items-center justify-center px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300"
                         >
                             Shop Now
-                        </Link>
-                        <Link
-                            to="/contact"
+                        </button>
+                        <button
+                            onClick={() => window.location.href = "/contact"}
                             className="inline-flex items-center justify-center px-8 py-3 border-2 border-indigo-600 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-300"
                         >
                             Contact Us
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>
