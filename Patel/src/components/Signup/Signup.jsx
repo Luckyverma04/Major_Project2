@@ -3,28 +3,143 @@ import { Link } from "react-router-dom";
 
 export default function SignUp() {
     const [formData, setFormData] = useState({
-        name: '',
+        fullName: '',
         email: '',
+        username: '',
         phone: '',
         password: '',
         confirmPassword: ''
     });
+    const [avatar, setAvatar] = useState(null);
+    const [coverImage, setCoverImage] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [coverImagePreview, setCoverImagePreview] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
+        // Clear error when user starts typing
+        if (error) setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        const fieldName = e.target.name;
+        
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('Please select a valid image file');
+                return;
+            }
+            
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                setError('File size should be less than 5MB');
+                return;
+            }
+
+            if (fieldName === 'avatar') {
+                setAvatar(file);
+                setAvatarPreview(URL.createObjectURL(file));
+            } else if (fieldName === 'coverImage') {
+                setCoverImage(file);
+                setCoverImagePreview(URL.createObjectURL(file));
+            }
+        }
+        
+        // Clear error when user selects file
+        if (error) setError('');
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle form submission logic here
+        setError('');
+        setSuccess('');
+
+        // Client-side validation
         if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match!');
+            setError('Passwords do not match!');
             return;
         }
-        console.log('Sign up form submitted:', formData);
+
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters long!');
+            return;
+        }
+
+        if (!avatar) {
+            setError('Profile picture (avatar) is required!');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Create FormData for multer compatibility
+            const apiFormData = new FormData();
+            apiFormData.append('fullName', formData.fullName.trim());
+            apiFormData.append('email', formData.email.trim());
+            apiFormData.append('username', formData.username.trim());
+            apiFormData.append('password', formData.password);
+            
+            // Add required avatar file
+            apiFormData.append('avatar', avatar);
+            
+            // Add optional cover image if provided
+            if (coverImage) {
+                apiFormData.append('coverImage', coverImage);
+            }
+            
+            // Add phone if provided
+            if (formData.phone.trim()) {
+                apiFormData.append('phone', formData.phone.trim());
+            }
+
+            console.log('Sending FormData to API with files'); // Debug log
+
+            const response = await fetch('http://localhost:8000/api/v1/users/register', {
+                method: 'POST',
+                // Don't set Content-Type header - let browser set it for FormData
+                body: apiFormData
+            });
+
+            const data = await response.json();
+            console.log('API Response:', data); // Debug log
+            console.log('Response status:', response.status); // Debug log
+
+            if (response.ok) {
+                setSuccess('Account created successfully! Please check your email for verification.');
+                // Reset form and files
+                setFormData({
+                    fullName: '',
+                    email: '',
+                    username: '',
+                    phone: '',
+                    password: '',
+                    confirmPassword: ''
+                });
+                setAvatar(null);
+                setCoverImage(null);
+                setAvatarPreview(null);
+                setCoverImagePreview(null);
+                // You might want to redirect to login page or dashboard
+                // window.location.href = '/login';
+            } else {
+                // Handle API error response
+                setError(data.message || 'Failed to create account. Please try again.');
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -40,21 +155,36 @@ export default function SignUp() {
                                 Join us and start your journey
                             </p>
                         </div>
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <p className="text-red-600 text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        {/* Success Message */}
+                        {success && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                <p className="text-green-600 text-sm font-medium">{success}</p>
+                            </div>
+                        )}
                         
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                                     Full Name *
                                 </label>
                                 <input
                                     type="text"
-                                    name="name"
-                                    id="name"
-                                    value={formData.name}
+                                    name="fullName"
+                                    id="fullName"
+                                    value={formData.fullName}
                                     onChange={handleChange}
                                     placeholder="Enter your full name"
                                     required
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -70,13 +200,31 @@ export default function SignUp() {
                                     onChange={handleChange}
                                     placeholder="Enter your email address"
                                     required
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Username *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    id="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder="Choose a unique username"
+                                    required
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Phone Number
+                                    Phone Number (Optional)
                                 </label>
                                 <input
                                     type="tel"
@@ -85,8 +233,58 @@ export default function SignUp() {
                                     value={formData.phone}
                                     onChange={handleChange}
                                     placeholder="Enter your phone number"
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
+                            </div>
+
+                            <div>
+                                <label htmlFor="avatar" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Profile Picture (Avatar) *
+                                </label>
+                                <input
+                                    type="file"
+                                    name="avatar"
+                                    id="avatar"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    required
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                                {avatarPreview && (
+                                    <div className="mt-2">
+                                        <img
+                                            src={avatarPreview}
+                                            alt="Avatar preview"
+                                            className="h-20 w-20 rounded-full object-cover border-2 border-gray-200"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="coverImage" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Cover Image (Optional)
+                                </label>
+                                <input
+                                    type="file"
+                                    name="coverImage"
+                                    id="coverImage"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                                {coverImagePreview && (
+                                    <div className="mt-2">
+                                        <img
+                                            src={coverImagePreview}
+                                            alt="Cover image preview"
+                                            className="h-32 w-full rounded-xl object-cover border-2 border-gray-200"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -99,10 +297,11 @@ export default function SignUp() {
                                     id="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    placeholder="Create a strong password"
+                                    placeholder="Create a strong password (min 6 characters)"
                                     required
                                     minLength="6"
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -119,7 +318,8 @@ export default function SignUp() {
                                     placeholder="Confirm your password"
                                     required
                                     minLength="6"
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={isLoading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -129,7 +329,8 @@ export default function SignUp() {
                                     name="terms"
                                     type="checkbox"
                                     required
-                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                    disabled={isLoading}
+                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded disabled:opacity-50"
                                 />
                                 <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
                                     I agree to the{' '}
@@ -146,9 +347,20 @@ export default function SignUp() {
                             <div className="pt-4">
                                 <button
                                     type="submit"
-                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition ease-in-out duration-300 transform hover:scale-105 shadow-lg"
+                                    disabled={isLoading}
+                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition ease-in-out duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-orange-600"
                                 >
-                                    Create Account
+                                    {isLoading ? (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Creating Account...
+                                        </span>
+                                    ) : (
+                                        'Create Account'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -176,7 +388,8 @@ export default function SignUp() {
                             <div className="mt-6 grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
-                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                                    disabled={isLoading}
+                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -189,7 +402,8 @@ export default function SignUp() {
 
                                 <button
                                     type="button"
-                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                                    disabled={isLoading}
+                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>

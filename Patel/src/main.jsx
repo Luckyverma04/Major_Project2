@@ -1,3 +1,4 @@
+// 
 'use client';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -17,10 +18,13 @@ import Login from './components/Login/Login';
 import SignUp from './components/Signup/Signup';
 import BulkOrderPage from './components/Bulkorder/Bulkorder';
 import Product from './components/Product/Product';
-import AdminPanel from './components/Admin/AdminPanel'; // 🔥 NEW: Admin Panel Import
+import AdminPanel from './components/Admin/AdminPanel';
+
+// 🔥 NEW: Dashboard Component (create this if you don't have it)
+import Dashboard from './components/Dashboard/Dashboard';
 
 // API Configuration
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -39,8 +43,8 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
-         index: true,
-         element: <Home /> // Using the original Home component
+        index: true,
+        element: <Home /> // Using the original Home component
       },
       { path: 'about', element: <About /> },
       { path: 'contact', element: <Contact /> },
@@ -55,8 +59,12 @@ const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'signup', element: <SignUp /> },
       { 
-        path: 'admin', 
-        element: <AdminPanel /> // 🔥 NEW: Admin Panel Route
+        path: 'dashboard', 
+        element: <Dashboard /> // 🔥 NEW: Dashboard Route - THIS WAS MISSING!
+      },
+      {
+        path: 'admin',
+        element: <AdminPanel /> // Admin Panel Route
       },
     ],
   },

@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
@@ -8,49 +8,36 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    proxy: {
-      // Proxy API requests to your Node.js backend
-      '/api': {
-        target: 'http://localhost:5000', // Your Node.js backend URL
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: false,
-      },
-      '/health': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      }
-    },
+    host: true,
     cors: true
   },
-
+  
   // Build configuration
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true, // Useful for debugging
   },
-
-  // Global CSS/SCSS configuration
+  
+  // CSS configuration (only if you actually use SCSS)
   css: {
     modules: {
       localsConvention: 'camelCaseOnly'
-    },
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@import "./src/styles/variables.scss";`
-      }
     }
+    // Remove SCSS config if you don't have SCSS files
+    // preprocessorOptions: {
+    //   scss: {
+    //     additionalData: `@import "./src/styles/variables.scss";`
+    //   }
+    // }
   },
-
-  // Environment variables
-  define: {
-    'process.env': process.env
-  },
-
+  
+  // REMOVED: The problematic define section that was causing security warnings
+  // Vite automatically handles VITE_ prefixed environment variables
+  
   // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],
     exclude: ['js-big-decimal']
   }
-});
+})

@@ -1,23 +1,97 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Login() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        email: '',
+        emailOrUsername: '', // Changed from 'email' to support both
         password: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
+        // Clear error when user starts typing
+        if (error) setError('');
     };
 
-    const handleSubmit = (e) => {
+    // Helper function to determine if input is email or username
+    const isEmail = (input) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(input);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle form submission logic here
-        console.log('Login form submitted:', formData);
+        setLoading(true);
+        setError('');
+
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+            
+            // Prepare login data based on input type
+            const loginData = {
+                password: formData.password
+            };
+
+            // Add either email or username based on input format
+            if (isEmail(formData.emailOrUsername)) {
+                loginData.email = formData.emailOrUsername;
+            } else {
+                loginData.username = formData.emailOrUsername;
+            }
+
+            console.log('Login data being sent:', loginData); // Debug log
+
+            const response = await axios.post(`${API_BASE_URL}/users/login`, loginData);
+
+            // Handle successful login
+            console.log('Login successful:', response.data);
+            
+            // Store token in localStorage (if your API returns one)
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+            }
+            
+            // Store user data if needed
+            if (response.data.user) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+            }
+
+            // Redirect to dashboard or home page
+            navigate('/dashboard'); // Change this to your desired redirect path
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            
+            // Handle different types of errors
+            if (error.response) {
+                // Server responded with error status
+                const errorMessage = error.response.data.message || error.response.data.error || 'Login failed. Please try again.';
+                
+                // Handle specific error messages
+                if (errorMessage.includes('user not exist') || errorMessage.includes('not found')) {
+                    setError('No account found with this email or username. Please check your credentials or sign up for a new account.');
+                } else if (errorMessage.includes('password') || errorMessage.includes('incorrect') || errorMessage.includes('invalid')) {
+                    setError('Incorrect password. Please try again.');
+                } else {
+                    setError(errorMessage);
+                }
+            } else if (error.request) {
+                // Network error
+                setError('Network error. Please check your connection and ensure the server is running.');
+            } else {
+                // Other error
+                setError('An unexpected error occurred.');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -34,21 +108,32 @@ export default function Login() {
                             </p>
                         </div>
                         
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <p className="text-red-600 text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+                        
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Email Address
+                                <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email or Username
                                 </label>
                                 <input
-                                    type="email"
-                                    name="email"
-                                    id="email"
-                                    value={formData.email}
+                                    type="text"
+                                    name="emailOrUsername"
+                                    id="emailOrUsername"
+                                    value={formData.emailOrUsername}
                                     onChange={handleChange}
-                                    placeholder="Enter your email address"
+                                    placeholder="Enter your email or username"
                                     required
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={loading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    You can use either your email address or username to sign in
+                                </p>
                             </div>
 
                             <div>
@@ -63,7 +148,8 @@ export default function Login() {
                                     onChange={handleChange}
                                     placeholder="Enter your password"
                                     required
-                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg"
+                                    disabled={loading}
+                                    className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -73,7 +159,8 @@ export default function Login() {
                                         id="remember-me"
                                         name="remember-me"
                                         type="checkbox"
-                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                        disabled={loading}
+                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded disabled:opacity-50"
                                     />
                                     <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                                         Remember me
@@ -90,9 +177,20 @@ export default function Login() {
                             <div className="pt-4">
                                 <button
                                     type="submit"
-                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition ease-in-out duration-300 transform hover:scale-105 shadow-lg"
+                                    disabled={loading}
+                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition ease-in-out duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100"
                                 >
-                                    Sign In
+                                    {loading ? (
+                                        <span className="flex items-center justify-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Signing In...
+                                        </span>
+                                    ) : (
+                                        'Sign In'
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -120,7 +218,8 @@ export default function Login() {
                             <div className="mt-6 grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
-                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                                    disabled={loading}
+                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                                         <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -133,7 +232,8 @@ export default function Login() {
 
                                 <button
                                     type="button"
-                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                                    disabled={loading}
+                                    className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
