@@ -80,68 +80,72 @@ export default function SignUp() {
 
         setIsLoading(true);
 
-        try {
-            // Create FormData for multer compatibility
-            const apiFormData = new FormData();
-            apiFormData.append('fullName', formData.fullName.trim());
-            apiFormData.append('email', formData.email.trim());
-            apiFormData.append('username', formData.username.trim());
-            apiFormData.append('password', formData.password);
-            
-            // Add required avatar file
-            apiFormData.append('avatar', avatar);
-            
-            // Add optional cover image if provided
-            if (coverImage) {
-                apiFormData.append('coverImage', coverImage);
-            }
-            
-            // Add phone if provided
-            if (formData.phone.trim()) {
-                apiFormData.append('phone', formData.phone.trim());
-            }
+      try {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-            console.log('Sending FormData to API with files'); // Debug log
+    if (!API_BASE_URL) {
+        console.error("❌ Missing API base URL. Set VITE_API_BASE_URL in .env.production");
+        setError("Configuration error: API URL not found.");
+        return;
+    }
 
-            const response = await fetch('http://localhost:8000/api/v1/users/register', {
-                method: 'POST',
-                // Don't set Content-Type header - let browser set it for FormData
-                body: apiFormData
-            });
+    const apiFormData = new FormData();
+    apiFormData.append('fullName', formData.fullName.trim());
+    apiFormData.append('email', formData.email.trim());
+    apiFormData.append('username', formData.username.trim());
+    apiFormData.append('password', formData.password);
 
-            const data = await response.json();
-            console.log('API Response:', data); // Debug log
-            console.log('Response status:', response.status); // Debug log
+    // ✅ Make avatar optional
+    if (avatar) {
+        apiFormData.append('avatar', avatar);
+    }
 
-            if (response.ok) {
-                setSuccess('Account created successfully! Please check your email for verification.');
-                // Reset form and files
-                setFormData({
-                    fullName: '',
-                    email: '',
-                    username: '',
-                    phone: '',
-                    password: '',
-                    confirmPassword: ''
-                });
-                setAvatar(null);
-                setCoverImage(null);
-                setAvatarPreview(null);
-                setCoverImagePreview(null);
-                // You might want to redirect to login page or dashboard
-                // window.location.href = '/login';
-            } else {
-                // Handle API error response
-                setError(data.message || 'Failed to create account. Please try again.');
-            }
-        } catch (error) {
-            console.error('Registration error:', error);
-            setError('Network error. Please check your connection and try again.');
-        } finally {
-            setIsLoading(false);
-        }
+    // ✅ Make cover image optional
+    if (coverImage) {
+        apiFormData.append('coverImage', coverImage);
+    }
+
+    if (formData.phone.trim()) {
+        apiFormData.append('phone', formData.phone.trim());
+    }
+
+    console.log('Sending FormData to API with files');
+
+    const response = await fetch(`${API_BASE_URL}/users/register`, {
+        method: 'POST',
+        body: apiFormData,
+        credentials: 'include',
+    });
+
+    const data = await response.json();
+    console.log('API Response:', data);
+    console.log('Response status:', response.status);
+
+    if (response.ok) {
+        setSuccess('Account created successfully! Please check your email for verification.');
+
+        setFormData({
+            fullName: '',
+            email: '',
+            username: '',
+            phone: '',
+            password: '',
+            confirmPassword: ''
+        });
+        setAvatar(null);
+        setCoverImage(null);
+        setAvatarPreview(null);
+        setCoverImagePreview(null);
+    } else {
+        setError(data.message || 'Failed to create account. Please try again.');
+    }
+} catch (error) {
+    console.error('Registration error:', error);
+    setError('Network error. Please check your connection and try again.');
+} finally {
+    setIsLoading(false);
+}
     };
-
     return (
         <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="w-full max-w-4xl">

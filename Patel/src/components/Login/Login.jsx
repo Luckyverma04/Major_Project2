@@ -31,67 +31,68 @@ export default function Login() {
         setLoading(true);
         setError('');
 
-        try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-            
-            // Prepare login data based on input type
-            const loginData = {
-                password: formData.password
-            };
+    try {
+    // ✅ Always rely on VITE_API_BASE_URL, do not fallback to localhost in production
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-            // Add either email or username based on input format
-            if (isEmail(formData.emailOrUsername)) {
-                loginData.email = formData.emailOrUsername;
-            } else {
-                loginData.username = formData.emailOrUsername;
-            }
+    if (!API_BASE_URL) {
+        console.error("❌ API_BASE_URL is missing! Please set VITE_API_BASE_URL in .env.production");
+        setError("Configuration error: API base URL missing.");
+        return;
+    }
 
-            console.log('Login data being sent:', loginData); // Debug log
+    // Prepare login data
+    const loginData = {
+        password: formData.password,
+    };
 
-            const response = await axios.post(`${API_BASE_URL}/users/login`, loginData);
+    if (isEmail(formData.emailOrUsername)) {
+        loginData.email = formData.emailOrUsername;
+    } else {
+        loginData.username = formData.emailOrUsername;
+    }
 
-            // Handle successful login
-            console.log('Login successful:', response.data);
-            
-            // Store token in localStorage (if your API returns one)
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-            }
-            
-            // Store user data if needed
-            if (response.data.user) {
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-            }
+    console.log('Login data being sent:', loginData);
 
-            // Redirect to dashboard or home page
-            navigate('/dashboard'); // Change this to your desired redirect path
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            
-            // Handle different types of errors
-            if (error.response) {
-                // Server responded with error status
-                const errorMessage = error.response.data.message || error.response.data.error || 'Login failed. Please try again.';
-                
-                // Handle specific error messages
-                if (errorMessage.includes('user not exist') || errorMessage.includes('not found')) {
-                    setError('No account found with this email or username. Please check your credentials or sign up for a new account.');
-                } else if (errorMessage.includes('password') || errorMessage.includes('incorrect') || errorMessage.includes('invalid')) {
-                    setError('Incorrect password. Please try again.');
-                } else {
-                    setError(errorMessage);
-                }
-            } else if (error.request) {
-                // Network error
-                setError('Network error. Please check your connection and ensure the server is running.');
-            } else {
-                // Other error
-                setError('An unexpected error occurred.');
-            }
-        } finally {
-            setLoading(false);
+    // ✅ Add withCredentials: true to allow cookies/sessions
+    const response = await axios.post(
+        `${API_BASE_URL}/users/login`,
+        loginData,
+        { withCredentials: true }
+    );
+
+    console.log('Login successful:', response.data);
+
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+    }
+
+    if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+
+    navigate('/dashboard');
+} catch (error) {
+    console.error('Login error:', error);
+
+    if (error.response) {
+        const errorMessage = error.response.data.message || error.response.data.error || 'Login failed. Please try again.';
+        
+        if (errorMessage.includes('user not exist') || errorMessage.includes('not found')) {
+            setError('No account found with this email or username. Please check your credentials or sign up for a new account.');
+        } else if (errorMessage.includes('password') || errorMessage.includes('incorrect') || errorMessage.includes('invalid')) {
+            setError('Incorrect password. Please try again.');
+        } else {
+            setError(errorMessage);
         }
+    } else if (error.request) {
+        setError('Network error. Please check your connection and ensure the server is running.');
+    } else {
+        setError('An unexpected error occurred.');
+    }
+} finally {
+    setLoading(false);
+}
     };
 
     return (

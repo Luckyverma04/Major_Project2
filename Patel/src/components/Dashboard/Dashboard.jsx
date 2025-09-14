@@ -1,62 +1,328 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const [success, setSuccess] = useState('');
+    const [user, setUser] = useState({});
+    const [watchHistory, setWatchHistory] = useState([]);
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [showUpdateProfile, setShowUpdateProfile] = useState(false);
+    const [showUploadAvatar, setShowUploadAvatar] = useState(false);
+    const [showUploadCover, setShowUploadCover] = useState(false);
+    
+    // Form states
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        email: ''
+    });
+
     const token = localStorage.getItem('token');
+    
+    // API Configuration with proper error handling
+    const getApiBaseUrl = () => {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        if (!API_BASE_URL) {
+            console.error("❌ Missing API base URL. Set VITE_API_BASE_URL in .env");
+            setError("Configuration error: API URL not found.");
+            return null;
+        }
+        return API_BASE_URL;
+    };
+
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        setUser(storedUser);
+        setProfileForm({
+            name: storedUser.name || storedUser.fullName || '',
+            email: storedUser.email || ''
+        });
+        fetchCurrentUser();
+        fetchWatchHistory();
+    }, []);
+
+    const fetchCurrentUser = async () => {
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/current-user`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Current User Response:', data);
+
+            if (response.ok && data.success) {
+                setUser(data.data);
+                localStorage.setItem('user', JSON.stringify(data.data));
+                setProfileForm({
+                    name: data.data.name || data.data.fullName || '',
+                    email: data.data.email || ''
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+        }
+    };
+
+    const fetchWatchHistory = async () => {
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/watch-history`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Watch History Response:', data);
+
+            if (response.ok && data.success) {
+                setWatchHistory(data.data || []);
+            }
+        } catch (error) {
+            console.error('Error fetching watch history:', error);
+        }
+    };
 
     const handleLogout = async () => {
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
         setLoading(true);
         setError('');
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-            
-            // Call the logout API
-            await axios.post(`${API_BASE_URL}/users/logout`, {}, {
+            const response = await fetch(`${API_BASE_URL}/users/logout`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
             });
 
-            console.log('Logout successful');
-            
-            // Clear local storage
+            const data = await response.json();
+            console.log('Logout Response:', data);
+
+            // Always clear localStorage and redirect, even if API call fails
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            
-            // Redirect to login page
             navigate('/login');
-            
+
+            if (response.ok) {
+                console.log('Logout successful');
+            } else {
+                setError('Logout completed, but there was a server issue.');
+            }
         } catch (error) {
             console.error('Logout error:', error);
-            
-            // Even if API call fails, still clear local storage and redirect
-            // This ensures user is logged out from frontend even if backend has issues
+            // Still clear localStorage and redirect on network error
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             navigate('/login');
-            
-            // You can still show an error message if needed
-            if (error.response) {
-                setError('Logout completed, but there was a server issue.');
-            } else {
-                setError('Logout completed, but there was a network issue.');
-            }
+            setError('Logout completed, but there was a network issue.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleQuickLogout = () => {
-        // Quick logout without API call (fallback)
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setError('New passwords do not match');
+            return;
+        }
+
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    oldPassword: passwordForm.currentPassword,
+                    newPassword: passwordForm.newPassword
+                }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Change Password Response:', data);
+
+            if (response.ok && data.success) {
+                setSuccess('Password changed successfully');
+                setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setShowChangePassword(false);
+            } else {
+                setError(data.message || 'Failed to change password. Please try again.');
+            }
+        } catch (error) {
+            console.error('Change password error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const updateData = {};
+            if (profileForm.name.trim()) updateData.fullName = profileForm.name.trim();
+            if (profileForm.email.trim()) updateData.email = profileForm.email.trim();
+
+            const response = await fetch(`${API_BASE_URL}/users/update-account`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Update Profile Response:', data);
+
+            if (response.ok && data.success) {
+                setUser(data.data);
+                localStorage.setItem('user', JSON.stringify(data.data));
+                setSuccess('Profile updated successfully');
+                setShowUpdateProfile(false);
+            } else {
+                setError(data.message || 'Failed to update profile. Please try again.');
+            }
+        } catch (error) {
+            console.error('Update profile error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileUpload = async (file, type) => {
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        if (!file) {
+            setError('Please select a file');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const formData = new FormData();
+            formData.append(type === 'avatar' ? 'avatar' : 'coverImage', file);
+
+            const endpoint = type === 'avatar' ? '/users/avatar' : '/users/cover-image';
+            
+            console.log(`Uploading ${type} to ${API_BASE_URL}${endpoint}`);
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData,
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log(`${type} Upload Response:`, data);
+
+            if (response.ok && data.success) {
+                setUser(data.data);
+                localStorage.setItem('user', JSON.stringify(data.data));
+                setSuccess(`${type === 'avatar' ? 'Avatar' : 'Cover image'} updated successfully`);
+                if (type === 'avatar') setShowUploadAvatar(false);
+                else setShowUploadCover(false);
+            } else {
+                setError(data.message || `Failed to upload ${type}. Please try again.`);
+            }
+        } catch (error) {
+            console.error(`${type} upload error:`, error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRefreshToken = async () => {
+        const API_BASE_URL = getApiBaseUrl();
+        if (!API_BASE_URL) return;
+
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/refresh-token`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Refresh Token Response:', data);
+
+            if (response.ok && data.success) {
+                if (data.data.accessToken) {
+                    localStorage.setItem('token', data.data.accessToken);
+                    setSuccess('Token refreshed successfully');
+                }
+            } else {
+                setError(data.message || 'Failed to refresh token. Please try again.');
+            }
+        } catch (error) {
+            console.error('Refresh token error:', error);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const clearMessages = () => {
+        setError('');
+        setSuccess('');
     };
 
     return (
@@ -75,9 +341,16 @@ export default function Dashboard() {
                                     Home
                                 </Link>
                                 <button 
+                                    onClick={handleRefreshToken}
+                                    disabled={loading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                                >
+                                    Refresh Token
+                                </button>
+                                <button 
                                     onClick={handleLogout}
                                     disabled={loading}
-                                    className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50 flex items-center"
                                 >
                                     {loading ? (
                                         <>
@@ -95,55 +368,282 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <div className="px-6 py-4">
-                        <p className="text-gray-600">
-                            Welcome back, <span className="font-medium text-orange-600">{user.name || user.email || 'User'}</span>!
-                        </p>
-                    </div>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700">{error}</p>
-                                <button 
-                                    onClick={() => setError('')}
-                                    className="text-sm text-yellow-600 underline hover:text-yellow-500 mt-1"
-                                >
-                                    Dismiss
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Success Message */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-green-800">
-                                Login Successful!
-                            </h3>
-                            <p className="text-sm text-green-700 mt-1">
-                                You have successfully logged into your dashboard.
+                        <div className="flex items-center space-x-4">
+                            {user.avatar && (
+                                <img 
+                                    src={user.avatar} 
+                                    alt="Avatar" 
+                                    className="w-12 h-12 rounded-full object-cover"
+                                />
+                            )}
+                            <p className="text-gray-600">
+                                Welcome back, <span className="font-medium text-orange-600">
+                                    {user.name || user.fullName || user.email || 'User'}
+                                </span>!
                             </p>
                         </div>
                     </div>
                 </div>
 
+                {/* Messages */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                        <div className="flex justify-between items-start">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-red-700">{error}</p>
+                                </div>
+                            </div>
+                            <button onClick={clearMessages} className="text-red-500 hover:text-red-700 ml-4">×</button>
+                        </div>
+                    </div>
+                )}
+
+                {success && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div className="flex justify-between items-start">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-green-700">{success}</p>
+                                </div>
+                            </div>
+                            <button onClick={clearMessages} className="text-green-500 hover:text-green-700 ml-4">×</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Profile Management Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    {/* Profile Actions */}
+                    <div className="bg-white shadow rounded-lg p-6">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Profile Management</h2>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => setShowUpdateProfile(!showUpdateProfile)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Update Profile
+                            </button>
+                            <button
+                                onClick={() => setShowChangePassword(!showChangePassword)}
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Change Password
+                            </button>
+                            <button
+                                onClick={() => setShowUploadAvatar(!showUploadAvatar)}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Upload Avatar
+                            </button>
+                            <button
+                                onClick={() => setShowUploadCover(!showUploadCover)}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Upload Cover Image
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Account Information */}
+                    <div className="bg-white shadow rounded-lg p-6">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Account Information</h2>
+                        <div className="space-y-3">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Email:</span>
+                                <span className="font-medium">{user.email || 'Not provided'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Name:</span>
+                                <span className="font-medium">{user.name || user.fullName || 'Not provided'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Username:</span>
+                                <span className="font-medium">{user.username || 'Not provided'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Phone:</span>
+                                <span className="font-medium">{user.phone || 'Not provided'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Status:</span>
+                                <span className="font-medium text-green-600">Active</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Last Login:</span>
+                                <span className="font-medium">{new Date().toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Change Password Form */}
+                {showChangePassword && (
+                    <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Change Password</h3>
+                        <form onSubmit={handleChangePassword} className="space-y-4">
+                            <input
+                                type="password"
+                                placeholder="Current Password"
+                                value={passwordForm.currentPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <input
+                                type="password"
+                                placeholder="New Password"
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <input
+                                type="password"
+                                placeholder="Confirm New Password"
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <div className="flex space-x-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                                >
+                                    {loading ? 'Changing...' : 'Change Password'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowChangePassword(false)}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                {/* Update Profile Form */}
+                {showUpdateProfile && (
+                    <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Update Profile</h3>
+                        <form onSubmit={handleUpdateProfile} className="space-y-4">
+                            <input
+                                type="text"
+                                placeholder="Full Name"
+                                value={profileForm.name}
+                                onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={profileForm.email}
+                                onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex space-x-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                                >
+                                    {loading ? 'Updating...' : 'Update Profile'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUpdateProfile(false)}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                {/* Upload Avatar */}
+                {showUploadAvatar && (
+                    <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Avatar</h3>
+                        <div className="space-y-4">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    if (e.target.files[0]) {
+                                        handleFileUpload(e.target.files[0], 'avatar');
+                                    }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            />
+                            <button
+                                onClick={() => setShowUploadAvatar(false)}
+                                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Upload Cover Image */}
+                {showUploadCover && (
+                    <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Cover Image</h3>
+                        <div className="space-y-4">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    if (e.target.files[0]) {
+                                        handleFileUpload(e.target.files[0], 'cover');
+                                    }
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                            <button
+                                onClick={() => setShowUploadCover(false)}
+                                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Watch History */}
+                {watchHistory.length > 0 && (
+                    <div className="bg-white shadow rounded-lg p-6 mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Watch History</h3>
+                        <div className="space-y-2">
+                            {watchHistory.slice(0, 5).map((item, index) => (
+                                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200">
+                                    <span className="text-gray-700">{item.title || 'Video'}</span>
+                                    <span className="text-sm text-gray-500">
+                                        {item.watchedAt ? new Date(item.watchedAt).toLocaleDateString() : 'Recently'}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Link to="/product" className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
@@ -207,44 +707,6 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </Link>
-                </div>
-
-                {/* User Info Card */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">Account Information</h2>
-                        <button 
-                            onClick={handleQuickLogout}
-                            className="text-sm text-red-600 hover:text-red-700 underline"
-                            title="Quick logout (no API call)"
-                        >
-                            Quick Logout
-                        </button>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Email:</span>
-                            <span className="font-medium">{user.email || 'Not provided'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Name:</span>
-                            <span className="font-medium">{user.name || 'Not provided'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Status:</span>
-                            <span className="font-medium text-green-600">Active</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Last Login:</span>
-                            <span className="font-medium">{new Date().toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Token:</span>
-                            <span className="font-mono text-xs text-gray-500">
-                                {token ? `${token.substring(0, 20)}...` : 'Not available'}
-                            </span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
