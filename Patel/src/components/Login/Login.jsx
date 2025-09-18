@@ -5,7 +5,7 @@ import axios from "axios";
 export default function Login() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        emailOrUsername: '', // Changed from 'email' to support both
+        emailOrUsername: '',
         password: ''
     });
     const [loading, setLoading] = useState(false);
@@ -31,68 +31,139 @@ export default function Login() {
         setLoading(true);
         setError('');
 
-    try {
-    // ✅ Always rely on VITE_API_BASE_URL, do not fallback to localhost in production
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        try {
+            // ✅ FIXED: Proper API URL configuration for Render
+            const API_BASE_URL = import.meta.env.PROD 
+                ? 'https://patelcropproducts-backend.onrender.com/api/v1'
+                : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+            
+            console.log('Using API URL:', API_BASE_URL);
+            console.log('Environment:', import.meta.env.MODE);
+            console.log('Production mode:', import.meta.env.PROD);
 
-    if (!API_BASE_URL) {
-        console.error("❌ API_BASE_URL is missing! Please set VITE_API_BASE_URL in .env.production");
-        setError("Configuration error: API base URL missing.");
-        return;
-    }
+            // Prepare login data - match your backend expected format
+            const loginData = {
+                password: formData.password,
+            };
 
-    // Prepare login data
-    const loginData = {
-        password: formData.password,
-    };
+            // Add either email or username based on input format
+            if (isEmail(formData.emailOrUsername)) {
+                loginData.email = formData.emailOrUsername;
+            } else {
+                loginData.username = formData.emailOrUsername;
+            }
 
-    if (isEmail(formData.emailOrUsername)) {
-        loginData.email = formData.emailOrUsername;
-    } else {
-        loginData.username = formData.emailOrUsername;
-    }
+            console.log('Sending login data:', { ...loginData, password: '[HIDDEN]' });
 
-    console.log('Login data being sent:', loginData);
+            // ✅ FIXED: Proper axios configuration for CORS
+            const response = await axios({
+                method: 'POST',
+                url: `${API_BASE_URL}/users/login`,
+                data: loginData,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                withCredentials: true, // ✅ CHANGED: Enable credentials for cookies
+                timeout: 30000 // ✅ INCREASED: 30 second timeout for Render cold starts
+            });
 
-    // ✅ Add withCredentials: true to allow cookies/sessions
-    const response = await axios.post(
-        `${API_BASE_URL}/users/login`,
-        loginData,
-        { withCredentials: true }
-    );
+            console.log('Login response:', response.data);
 
-    console.log('Login successful:', response.data);
+            // ✅ IMPROVED: Better response handling
+            if (response.data) {
+                const { success, data, user, token, message } = response.data;
+                
+                // Handle different response formats
+                if (success !== false) {
+                    // Store authentication data
+                    if (token) {
+                        localStorage.setItem('token', token);
+                        // Set default auth header for future requests
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    }
 
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-    }
+                    // Store user data - handle different response structures
+                    const userData = user || data?.user || data;
+                    if (userData && typeof userData === 'object') {
+                        localStorage.setItem('user', JSON.stringify(userData));
+                    }
 
-    if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
+                    console.log('✅ Login successful, navigating to dashboard...');
+                    
+                    // ✅ IMPROVED: Better navigation with state
+                    navigate('/dashboard', { 
+                        replace: true,
+                        state: { loginSuccess: true }
+                    });
+                } else {
+                    throw new Error(message || 'Login failed. Please try again.');
+                }
+            } else {
+                throw new Error('Invalid response from server');
+            }
 
-    navigate('/dashboard');
-} catch (error) {
-    console.error('Login error:', error);
+        } catch (error) {
+            console.error('❌ Login error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+                headers: error.response?.headers,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    withCredentials: error.config?.withCredentials
+                }
+            });
 
-    if (error.response) {
-        const errorMessage = error.response.data.message || error.response.data.error || 'Login failed. Please try again.';
-        
-        if (errorMessage.includes('user not exist') || errorMessage.includes('not found')) {
-            setError('No account found with this email or username. Please check your credentials or sign up for a new account.');
-        } else if (errorMessage.includes('password') || errorMessage.includes('incorrect') || errorMessage.includes('invalid')) {
-            setError('Incorrect password. Please try again.');
-        } else {
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+
+            if (error.code === 'ECONNABORTED') {
+                errorMessage = 'Request timeout. The server might be starting up. Please wait a moment and try again.';
+            } else if (error.code === 'ERR_NETWORK') {
+                errorMessage = 'Network error. Please check your internet connection.';
+            } else if (error.message.includes('CORS')) {
+                errorMessage = 'Connection error. Please try refreshing the page and logging in again.';
+            } else if (error.response) {
+                // Server responded with error status
+                const status = error.response.status;
+                const data = error.response.data;
+                
+                switch (status) {
+                    case 400:
+                        errorMessage = data?.message || 'Invalid request. Please check your input.';
+                        break;
+                    case 401:
+                        errorMessage = 'Invalid email/username or password. Please check your credentials.';
+                        break;
+                    case 403:
+                        errorMessage = 'Access denied. Please check your credentials.';
+                        break;
+                    case 404:
+                        errorMessage = 'User not found. Please check your email/username or sign up for a new account.';
+                        break;
+                    case 429:
+                        errorMessage = 'Too many login attempts. Please wait a few minutes and try again.';
+                        break;
+                    case 500:
+                    case 502:
+                    case 503:
+                        errorMessage = 'Server error. Please try again in a few minutes.';
+                        break;
+                    default:
+                        errorMessage = data?.message || data?.error || `Server error (${status}). Please try again.`;
+                }
+            } else if (error.request) {
+                // Request was made but no response received
+                errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
             setError(errorMessage);
+        } finally {
+            setLoading(false);
         }
-    } else if (error.request) {
-        setError('Network error. Please check your connection and ensure the server is running.');
-    } else {
-        setError('An unexpected error occurred.');
-    }
-} finally {
-    setLoading(false);
-}
     };
 
     return (
@@ -112,7 +183,16 @@ export default function Login() {
                         {/* Error Message */}
                         {error && (
                             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                                <p className="text-red-600 text-sm font-medium">{error}</p>
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-red-600 text-sm font-medium">{error}</p>
+                                    </div>
+                                </div>
                             </div>
                         )}
                         
@@ -130,6 +210,7 @@ export default function Login() {
                                     placeholder="Enter your email or username"
                                     required
                                     disabled={loading}
+                                    autoComplete="username"
                                     className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                                 <p className="mt-1 text-xs text-gray-500">
@@ -150,6 +231,7 @@ export default function Login() {
                                     placeholder="Enter your password"
                                     required
                                     disabled={loading}
+                                    autoComplete="current-password"
                                     className="w-full py-4 px-4 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none transition duration-200 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
@@ -169,9 +251,9 @@ export default function Login() {
                                 </div>
 
                                 <div className="text-sm">
-                                    <a href="#" className="text-orange-600 hover:text-orange-700 font-medium">
+                                    <Link to="/forgot-password" className="text-orange-600 hover:text-orange-700 font-medium">
                                         Forgot your password?
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
 
@@ -243,6 +325,19 @@ export default function Login() {
                                 </button>
                             </div>
                         </div>
+                        
+                        {/* ✅ ADDED: Debug info in development */}
+                        {import.meta.env.MODE === 'development' && (
+                            <div className="mt-8 p-4 bg-gray-50 rounded-lg text-xs text-gray-600">
+                                <p><strong>Debug Info:</strong></p>
+                                <p>API URL: {import.meta.env.PROD 
+                                    ? 'https://patelcropproducts-backend.onrender.com/api/v1'
+                                    : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+                                }</p>
+                                <p>Mode: {import.meta.env.MODE}</p>
+                                <p>Production: {import.meta.env.PROD ? 'Yes' : 'No'}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
