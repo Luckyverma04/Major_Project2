@@ -1,29 +1,38 @@
-// 
-'use client';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
+import './index.css';   // ✅ बस यही चाहिए
+
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
 
-// Layout and Components
+// Components
 import Layout from './Layout';
 import Home from './components/Home/Home';
 import About from './components/About/About';
 import Contact from './components/Contact/Contact';
 import User from './components/User/User';
-// import Github, { githubInfoLoader } from './components/Github/Github';
 import Login from './components/Login/Login';
 import SignUp from './components/Signup/Signup';
 import BulkOrderPage from './components/Bulkorder/Bulkorder';
 import Product from './components/Product/Product';
 import AdminPanel from './components/Admin/AdminPanel';
-
-// 🔥 NEW: Dashboard Component (create this if you don't have it)
 import Dashboard from './components/Dashboard/Dashboard';
 
-// API Configuration
+// Tailwind Test Component
+function TailwindTest() {
+  return (
+    <div className="bg-blue-500 text-white p-8 rounded-lg shadow-lg m-4">
+      <h1 className="text-3xl font-bold mb-4">Tailwind Test</h1>
+      <p className="text-lg">If you see blue box → Tailwind is working ✅</p>
+      <button className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded mt-4 transition-colors">
+        Test Button
+      </button>
+    </div>
+  );
+}
+
+// API
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
@@ -33,44 +42,28 @@ axios.interceptors.request.use(config => {
   return config;
 });
 
-// React Query Client
 const queryClient = new QueryClient();
 
-// Router Configuration
 const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout />,
     children: [
-      {
-        index: true,
-        element: <Home /> // Using the original Home component
-      },
+      { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
       { path: 'contact', element: <Contact /> },
       { path: 'user/:userid', element: <User /> },
       { path: 'bulkorder', element: <BulkOrderPage /> },
       { path: 'product', element: <Product /> },
-      // {
-      //    path: 'github',
-      //   loader: githubInfoLoader,
-      //   element: <Github />
-      // },
       { path: 'login', element: <Login /> },
       { path: 'signup', element: <SignUp /> },
-      { 
-        path: 'dashboard', 
-        element: <Dashboard /> // 🔥 NEW: Dashboard Route - THIS WAS MISSING!
-      },
-      {
-        path: 'admin',
-        element: <AdminPanel /> // Admin Panel Route
-      },
+      { path: 'dashboard', element: <Dashboard /> },
+      { path: 'admin', element: <AdminPanel /> },
+      { path: 'test', element: <TailwindTest /> }, // ✅ Tailwind test route
     ],
   },
 ]);
 
-// Render Application
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

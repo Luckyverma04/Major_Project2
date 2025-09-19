@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   
@@ -10,7 +11,6 @@ export default defineConfig({
     strictPort: true,
     host: true,
     cors: true,
-    // Add proxy configuration to handle CORS issues
     proxy: {
       '/api': {
         target: 'https://patelcropproducts-backend.onrender.com',
@@ -36,8 +36,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: true, // Useful for debugging
-    // Add rollup options for better chunking
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -53,13 +52,12 @@ export default defineConfig({
     modules: {
       localsConvention: 'camelCaseOnly'
     },
-    // Add PostCSS configuration if needed
-    postcss: {}
+    // ✅ FIXED: load postcss.config.js instead of {}
+    postcss: './postcss.config.js'
   },
   
   // Environment variables configuration
   define: {
-    // Only define if you need custom globals
     __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
   },
   
@@ -69,12 +67,12 @@ export default defineConfig({
       'react', 
       'react-dom', 
       'react-router-dom',
-      'axios' // Add axios since you're using it
+      'axios'
     ],
     exclude: ['js-big-decimal']
   },
   
-  // Preview server configuration (for production build preview)
+  // Preview server configuration
   preview: {
     port: 4173,
     strictPort: true,
@@ -84,7 +82,6 @@ export default defineConfig({
   // Resolve configuration
   resolve: {
     alias: {
-      // Add path aliases if needed
       // '@': path.resolve(__dirname, 'src')
     }
   }
