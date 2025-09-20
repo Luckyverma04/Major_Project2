@@ -32,9 +32,9 @@ export default function Login() {
         setError('');
 
         try {
-            // ✅ FIXED: Proper API URL configuration for Render
+            // ✅ CORRECTED: Fixed API URL configuration
             const API_BASE_URL = import.meta.env.PROD 
-                ? 'https://patelcropproducts-backend.onrender.com/api/v1'
+                ? 'https://patelcropproducts.onrender.com/api/v1'  // CORRECTED URL
                 : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
             
             console.log('Using API URL:', API_BASE_URL);
@@ -64,8 +64,8 @@ export default function Login() {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                withCredentials: true, // ✅ CHANGED: Enable credentials for cookies
-                timeout: 30000 // ✅ INCREASED: 30 second timeout for Render cold starts
+                withCredentials: true, // Enable credentials for cookies
+                timeout: 30000 // 30 second timeout for Render cold starts
             });
 
             console.log('Login response:', response.data);
@@ -326,12 +326,12 @@ export default function Login() {
                             </div>
                         </div>
                         
-                        {/* ✅ ADDED: Debug info in development */}
+                        {/* Debug info in development */}
                         {import.meta.env.MODE === 'development' && (
                             <div className="mt-8 p-4 bg-gray-50 rounded-lg text-xs text-gray-600">
                                 <p><strong>Debug Info:</strong></p>
                                 <p>API URL: {import.meta.env.PROD 
-                                    ? 'https://patelcropproducts-backend.onrender.com/api/v1'
+                                    ? 'https://patelcropproducts.onrender.com/api/v1'
                                     : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
                                 }</p>
                                 <p>Mode: {import.meta.env.MODE}</p>
