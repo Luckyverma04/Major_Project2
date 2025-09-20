@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: './',   // 🔥 ye line add karo
-
+  base: './',
+  
   server: {
     port: 5173,
     strictPort: true,
@@ -30,7 +30,7 @@ export default defineConfig({
       }
     }
   },
-
+  
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -44,18 +44,15 @@ export default defineConfig({
       }
     }
   },
-
+  
   css: {
-    modules: {
-      localsConvention: 'camelCaseOnly'
-    },
     postcss: './postcss.config.js'
   },
-
+  
   define: {
     __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
   },
-
+  
   optimizeDeps: {
     include: [
       'react', 
@@ -65,16 +62,10 @@ export default defineConfig({
     ],
     exclude: ['js-big-decimal']
   },
-
+  
   preview: {
     port: 4173,
     strictPort: true,
     host: true
-  },
-
-  resolve: {
-    alias: {
-      // '@': path.resolve(__dirname, 'src')
-    }
   }
 })
