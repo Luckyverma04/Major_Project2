@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
-  // Development server configuration
+  base: './',   // 🔥 ye line add karo
+
   server: {
     port: 5173,
     strictPort: true,
@@ -31,8 +30,7 @@ export default defineConfig({
       }
     }
   },
-  
-  // Build configuration
+
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -46,22 +44,18 @@ export default defineConfig({
       }
     }
   },
-  
-  // CSS configuration
+
   css: {
     modules: {
       localsConvention: 'camelCaseOnly'
     },
-    // ✅ FIXED: load postcss.config.js instead of {}
     postcss: './postcss.config.js'
   },
-  
-  // Environment variables configuration
+
   define: {
     __DEV__: JSON.stringify(process.env.NODE_ENV === 'development')
   },
-  
-  // Optimize dependencies
+
   optimizeDeps: {
     include: [
       'react', 
@@ -71,15 +65,13 @@ export default defineConfig({
     ],
     exclude: ['js-big-decimal']
   },
-  
-  // Preview server configuration
+
   preview: {
     port: 4173,
     strictPort: true,
     host: true
   },
-  
-  // Resolve configuration
+
   resolve: {
     alias: {
       // '@': path.resolve(__dirname, 'src')
