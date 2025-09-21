@@ -32,22 +32,30 @@ export default function Dashboard() {
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
         if (!API_BASE_URL) {
             console.error("❌ Missing API base URL. Set VITE_API_BASE_URL in .env");
-            setError("Configuration error: API URL not found.");
+            setError("Configuration error: API URL not found. Please check environment variables.");
             return null;
         }
         return API_BASE_URL;
     };
 
+    // Check authentication on component mount
     useEffect(() => {
+        if (!token) {
+            console.log("No authentication token found, redirecting to login");
+            navigate('/login');
+            return;
+        }
+
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(storedUser);
         setProfileForm({
             name: storedUser.name || storedUser.fullName || '',
             email: storedUser.email || ''
         });
+        
         fetchCurrentUser();
         fetchWatchHistory();
-    }, []);
+    }, [token, navigate]);
 
     const fetchCurrentUser = async () => {
         const API_BASE_URL = getApiBaseUrl();
@@ -73,9 +81,15 @@ export default function Dashboard() {
                     name: data.data.name || data.data.fullName || '',
                     email: data.data.email || ''
                 });
+            } else if (response.status === 401) {
+                console.log("Authentication failed, redirecting to login");
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/login');
             }
         } catch (error) {
             console.error('Error fetching current user:', error);
+            setError('Failed to load user data. Please refresh the page.');
         }
     };
 
@@ -98,9 +112,15 @@ export default function Dashboard() {
 
             if (response.ok && data.success) {
                 setWatchHistory(data.data || []);
+            } else if (response.status === 401) {
+                console.log("Authentication failed while fetching watch history");
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/login');
             }
         } catch (error) {
             console.error('Error fetching watch history:', error);
+            // Don't show error for optional watch history
         }
     };
 
@@ -132,7 +152,7 @@ export default function Dashboard() {
             if (response.ok) {
                 console.log('Logout successful');
             } else {
-                setError('Logout completed, but there was a server issue.');
+                console.warn('Logout API failed, but user logged out locally');
             }
         } catch (error) {
             console.error('Logout error:', error);
@@ -140,7 +160,6 @@ export default function Dashboard() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             navigate('/login');
-            setError('Logout completed, but there was a network issue.');
         } finally {
             setLoading(false);
         }
@@ -154,11 +173,17 @@ export default function Dashboard() {
             return;
         }
 
+        if (passwordForm.newPassword.length < 6) {
+            setError('New password must be at least 6 characters long');
+            return;
+        }
+
         const API_BASE_URL = getApiBaseUrl();
         if (!API_BASE_URL) return;
 
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
             const response = await fetch(`${API_BASE_URL}/users/change-password`, {
@@ -181,6 +206,13 @@ export default function Dashboard() {
                 setSuccess('Password changed successfully');
                 setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 setShowChangePassword(false);
+            } else if (response.status === 401) {
+                setError('Current password is incorrect or session expired');
+                if (data.message && data.message.includes('token')) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    navigate('/login');
+                }
             } else {
                 setError(data.message || 'Failed to change password. Please try again.');
             }
@@ -198,8 +230,14 @@ export default function Dashboard() {
         const API_BASE_URL = getApiBaseUrl();
         if (!API_BASE_URL) return;
 
+        if (!profileForm.name.trim() && !profileForm.email.trim()) {
+            setError('Please provide at least one field to update');
+            return;
+        }
+
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
             const updateData = {};
@@ -224,6 +262,11 @@ export default function Dashboard() {
                 localStorage.setItem('user', JSON.stringify(data.data));
                 setSuccess('Profile updated successfully');
                 setShowUpdateProfile(false);
+            } else if (response.status === 401) {
+                setError('Authentication failed. Please login again.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/login');
             } else {
                 setError(data.message || 'Failed to update profile. Please try again.');
             }
@@ -244,8 +287,22 @@ export default function Dashboard() {
             return;
         }
 
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Please select a valid image file');
+            return;
+        }
+
+        // Validate file size (5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            setError('File size must be less than 5MB');
+            return;
+        }
+
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
             const formData = new FormData();
@@ -273,6 +330,11 @@ export default function Dashboard() {
                 setSuccess(`${type === 'avatar' ? 'Avatar' : 'Cover image'} updated successfully`);
                 if (type === 'avatar') setShowUploadAvatar(false);
                 else setShowUploadCover(false);
+            } else if (response.status === 401) {
+                setError('Authentication failed. Please login again.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/login');
             } else {
                 setError(data.message || `Failed to upload ${type}. Please try again.`);
             }
@@ -290,6 +352,7 @@ export default function Dashboard() {
 
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
             const response = await fetch(`${API_BASE_URL}/users/refresh-token`, {
@@ -310,7 +373,12 @@ export default function Dashboard() {
                     setSuccess('Token refreshed successfully');
                 }
             } else {
-                setError(data.message || 'Failed to refresh token. Please try again.');
+                setError(data.message || 'Failed to refresh token. Please login again.');
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    navigate('/login');
+                }
             }
         } catch (error) {
             console.error('Refresh token error:', error);
@@ -324,6 +392,16 @@ export default function Dashboard() {
         setError('');
         setSuccess('');
     };
+
+    // Auto-clear messages after 5 seconds
+    useEffect(() => {
+        if (error || success) {
+            const timer = setTimeout(() => {
+                clearMessages();
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error, success]);
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -373,7 +451,7 @@ export default function Dashboard() {
                                 <img 
                                     src={user.avatar} 
                                     alt="Avatar" 
-                                    className="w-12 h-12 rounded-full object-cover"
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                                 />
                             )}
                             <p className="text-gray-600">
@@ -502,10 +580,11 @@ export default function Dashboard() {
                             />
                             <input
                                 type="password"
-                                placeholder="New Password"
+                                placeholder="New Password (min 6 characters)"
                                 value={passwordForm.newPassword}
                                 onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                minLength="6"
                                 required
                             />
                             <input
@@ -514,6 +593,7 @@ export default function Dashboard() {
                                 value={passwordForm.confirmPassword}
                                 onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                minLength="6"
                                 required
                             />
                             <div className="flex space-x-4">
@@ -590,6 +670,7 @@ export default function Dashboard() {
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                             />
+                            <p className="text-sm text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
                             <button
                                 onClick={() => setShowUploadAvatar(false)}
                                 className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
@@ -615,6 +696,7 @@ export default function Dashboard() {
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
+                            <p className="text-sm text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
                             <button
                                 onClick={() => setShowUploadCover(false)}
                                 className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
