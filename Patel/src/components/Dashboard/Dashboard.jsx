@@ -39,13 +39,19 @@ export default function Dashboard() {
     };
 
     // Check authentication on component mount
-    useEffect(() => {
+   useEffect(() => {
+    // Small delay to ensure localStorage is ready after navigation
+    const checkAuth = setTimeout(() => {
+        const token = localStorage.getItem('token');
+        
         if (!token) {
             console.log("No authentication token found, redirecting to login");
-            navigate('/login');
+            navigate('/login', { replace: true });
             return;
         }
 
+        console.log("Authentication token found, initializing dashboard");
+        
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(storedUser);
         setProfileForm({
@@ -55,7 +61,10 @@ export default function Dashboard() {
         
         fetchCurrentUser();
         fetchWatchHistory();
-    }, [token, navigate]);
+    }, 300);
+
+    return () => clearTimeout(checkAuth);
+}, [navigate]);
 
     const fetchCurrentUser = async () => {
         const API_BASE_URL = getApiBaseUrl();

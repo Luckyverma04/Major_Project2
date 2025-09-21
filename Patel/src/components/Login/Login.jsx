@@ -26,145 +26,180 @@ export default function Login() {
         return emailRegex.test(input);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-        try {
-            // ✅ CORRECTED: Fixed API URL configuration
-            const API_BASE_URL = import.meta.env.PROD 
-                ? 'https://patelcropproducts.onrender.com/api/v1'  // CORRECTED URL
-                : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+    try {
+        // ✅ CORRECTED: Fixed API URL configuration
+        const API_BASE_URL = import.meta.env.PROD 
+            ? 'https://patelcropproducts.onrender.com/api/v1'  // CORRECTED URL
+            : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+        
+        console.log('Using API URL:', API_BASE_URL);
+        console.log('Environment:', import.meta.env.MODE);
+        console.log('Production mode:', import.meta.env.PROD);
+
+        // Prepare login data - match your backend expected format
+        const loginData = {
+            password: formData.password,
+        };
+
+        // Add either email or username based on input format
+        if (isEmail(formData.emailOrUsername)) {
+            loginData.email = formData.emailOrUsername;
+        } else {
+            loginData.username = formData.emailOrUsername;
+        }
+
+        console.log('Sending login data:', { ...loginData, password: '[HIDDEN]' });
+
+        // ✅ FIXED: Proper axios configuration for CORS
+        const response = await axios({
+            method: 'POST',
+            url: `${API_BASE_URL}/users/login`,
+            data: loginData,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            withCredentials: true, // Enable credentials for cookies
+            timeout: 30000 // 30 second timeout for Render cold starts
+        });
+
+        console.log('Login response:', response.data);
+
+        // ✅ CRITICAL FIX: Better response handling with proper token storage
+        if (response.data) {
+            const { success, data, user, token, message, accessToken } = response.data;
             
-            console.log('Using API URL:', API_BASE_URL);
-            console.log('Environment:', import.meta.env.MODE);
-            console.log('Production mode:', import.meta.env.PROD);
-
-            // Prepare login data - match your backend expected format
-            const loginData = {
-                password: formData.password,
-            };
-
-            // Add either email or username based on input format
-            if (isEmail(formData.emailOrUsername)) {
-                loginData.email = formData.emailOrUsername;
-            } else {
-                loginData.username = formData.emailOrUsername;
-            }
-
-            console.log('Sending login data:', { ...loginData, password: '[HIDDEN]' });
-
-            // ✅ FIXED: Proper axios configuration for CORS
-            const response = await axios({
-                method: 'POST',
-                url: `${API_BASE_URL}/users/login`,
-                data: loginData,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                withCredentials: true, // Enable credentials for cookies
-                timeout: 30000 // 30 second timeout for Render cold starts
-            });
-
-            console.log('Login response:', response.data);
-
-            // ✅ IMPROVED: Better response handling
-            if (response.data) {
-                const { success, data, user, token, message } = response.data;
+            // Handle different response formats
+            if (success !== false) {
+                // CRITICAL: Extract token from different possible locations
+                let authToken = null;
                 
-                // Handle different response formats
-                if (success !== false) {
-                    // Store authentication data
-                    if (token) {
-                        localStorage.setItem('token', token);
-                        // Set default auth header for future requests
-                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    }
+                // Try different token field names
+                if (token) {
+                    authToken = token;
+                } else if (accessToken) {
+                    authToken = accessToken;
+                } else if (data?.token) {
+                    authToken = data.token;
+                } else if (data?.accessToken) {
+                    authToken = data.accessToken;
+                }
 
-                    // Store user data - handle different response structures
-                    const userData = user || data?.user || data;
-                    if (userData && typeof userData === 'object') {
-                        localStorage.setItem('user', JSON.stringify(userData));
-                    }
-
-                    console.log('✅ Login successful, navigating to dashboard...');
+                // Store authentication token FIRST
+                if (authToken) {
+                    localStorage.setItem('token', authToken);
+                    console.log('✅ Token stored successfully');
                     
-                    // ✅ IMPROVED: Better navigation with state
+                    // Set default auth header for future requests
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                } else {
+                    console.error('❌ No token found in response:', response.data);
+                    throw new Error('Authentication token not received. Please try again.');
+                }
+
+                // Store user data - handle different response structures
+                const userData = user || data?.user || data;
+                if (userData && typeof userData === 'object') {
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    console.log('✅ User data stored successfully');
+                } else {
+                    console.warn('⚠️ No user data in response');
+                }
+
+                // CRITICAL: Verify storage before navigation
+                const storedToken = localStorage.getItem('token');
+                if (!storedToken) {
+                    throw new Error('Failed to store authentication token');
+                }
+
+                console.log('✅ Login successful, token verified, navigating to dashboard...');
+                
+                // Add small delay to ensure localStorage operations complete
+                setTimeout(() => {
                     navigate('/dashboard', { 
                         replace: true,
                         state: { loginSuccess: true }
                     });
-                } else {
-                    throw new Error(message || 'Login failed. Please try again.');
-                }
+                }, 150);
+
             } else {
-                throw new Error('Invalid response from server');
+                throw new Error(message || 'Login failed. Please try again.');
             }
-
-        } catch (error) {
-            console.error('❌ Login error details:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
-                headers: error.response?.headers,
-                config: {
-                    url: error.config?.url,
-                    method: error.config?.method,
-                    withCredentials: error.config?.withCredentials
-                }
-            });
-
-            let errorMessage = 'An unexpected error occurred. Please try again.';
-
-            if (error.code === 'ECONNABORTED') {
-                errorMessage = 'Request timeout. The server might be starting up. Please wait a moment and try again.';
-            } else if (error.code === 'ERR_NETWORK') {
-                errorMessage = 'Network error. Please check your internet connection.';
-            } else if (error.message.includes('CORS')) {
-                errorMessage = 'Connection error. Please try refreshing the page and logging in again.';
-            } else if (error.response) {
-                // Server responded with error status
-                const status = error.response.status;
-                const data = error.response.data;
-                
-                switch (status) {
-                    case 400:
-                        errorMessage = data?.message || 'Invalid request. Please check your input.';
-                        break;
-                    case 401:
-                        errorMessage = 'Invalid email/username or password. Please check your credentials.';
-                        break;
-                    case 403:
-                        errorMessage = 'Access denied. Please check your credentials.';
-                        break;
-                    case 404:
-                        errorMessage = 'User not found. Please check your email/username or sign up for a new account.';
-                        break;
-                    case 429:
-                        errorMessage = 'Too many login attempts. Please wait a few minutes and try again.';
-                        break;
-                    case 500:
-                    case 502:
-                    case 503:
-                        errorMessage = 'Server error. Please try again in a few minutes.';
-                        break;
-                    default:
-                        errorMessage = data?.message || data?.error || `Server error (${status}). Please try again.`;
-                }
-            } else if (error.request) {
-                // Request was made but no response received
-                errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
+        } else {
+            throw new Error('Invalid response from server');
         }
-    };
+
+    } catch (error) {
+        console.error('❌ Login error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            headers: error.response?.headers,
+            config: {
+                url: error.config?.url,
+                method: error.config?.method,
+                withCredentials: error.config?.withCredentials
+            }
+        });
+
+        // Clear any partial data on error
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        let errorMessage = 'An unexpected error occurred. Please try again.';
+
+        if (error.code === 'ECONNABORTED') {
+            errorMessage = 'Request timeout. The server might be starting up. Please wait a moment and try again.';
+        } else if (error.code === 'ERR_NETWORK') {
+            errorMessage = 'Network error. Please check your internet connection.';
+        } else if (error.message.includes('CORS')) {
+            errorMessage = 'Connection error. Please try refreshing the page and logging in again.';
+        } else if (error.response) {
+            // Server responded with error status
+            const status = error.response.status;
+            const data = error.response.data;
+            
+            switch (status) {
+                case 400:
+                    errorMessage = data?.message || 'Invalid request. Please check your input.';
+                    break;
+                case 401:
+                    errorMessage = 'Invalid email/username or password. Please check your credentials.';
+                    break;
+                case 403:
+                    errorMessage = 'Access denied. Please check your credentials.';
+                    break;
+                case 404:
+                    errorMessage = 'User not found. Please check your email/username or sign up for a new account.';
+                    break;
+                case 429:
+                    errorMessage = 'Too many login attempts. Please wait a few minutes and try again.';
+                    break;
+                case 500:
+                case 502:
+                case 503:
+                    errorMessage = 'Server error. Please try again in a few minutes.';
+                    break;
+                default:
+                    errorMessage = data?.message || data?.error || `Server error (${status}). Please try again.`;
+            }
+        } else if (error.request) {
+            // Request was made but no response received
+            errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        setError(errorMessage);
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
