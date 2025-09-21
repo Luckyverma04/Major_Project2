@@ -194,43 +194,44 @@ export default function Dashboard() {
         setError('');
         setSuccess('');
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/users/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    oldPassword: passwordForm.currentPassword,
-                    newPassword: passwordForm.newPassword
-                }),
-                credentials: 'include'
-            });
+       try {
+    const response = await fetch(`${API_BASE_URL}/users/change-password`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            oldPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+            confirmPassword: passwordForm.confirmPassword  // ADD THIS LINE
+        }),
+        credentials: 'include'
+    });
 
-            const data = await response.json();
-            console.log('Change Password Response:', data);
+    const data = await response.json();
+    console.log('Change Password Response:', data);
 
-            if (response.ok && data.success) {
-                setSuccess('Password changed successfully');
-                setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                setShowChangePassword(false);
-            } else if (response.status === 401) {
-                setError('Current password is incorrect or session expired');
-                if (data.message && data.message.includes('token')) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    navigate('/login');
-                }
-            } else {
-                setError(data.message || 'Failed to change password. Please try again.');
-            }
-        } catch (error) {
-            console.error('Change password error:', error);
-            setError('Network error. Please check your connection and try again.');
-        } finally {
-            setLoading(false);
+    if (response.ok && data.success) {
+        setSuccess('Password changed successfully');
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowChangePassword(false);
+    } else if (response.status === 401) {
+        setError('Current password is incorrect or session expired');
+        if (data.message && data.message.includes('token')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
         }
+    } else {
+        setError(data.message || 'Failed to change password. Please try again.');
+    }
+} catch (error) {
+    console.error('Change password error:', error);
+    setError('Network error. Please check your connection and try again.');
+} finally {
+    setLoading(false);
+}
     };
 
     const handleUpdateProfile = async (e) => {
