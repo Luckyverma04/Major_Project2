@@ -710,31 +710,62 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Upload Avatar */}
-                {showUploadAvatar && (
-                    <div className="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Avatar</h3>
-                        <div className="space-y-4">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    if (e.target.files[0]) {
-                                        handleFileUpload(e.target.files[0], 'cover');
-                                    }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <p className="text-sm text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
-                            <button
-                                onClick={() => setShowUploadCover(false)}
-                                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
+     {/* Upload Avatar */}
+{showUploadAvatar && (
+  <div className="bg-white shadow rounded-lg p-6 mb-6">
+    <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Avatar</h3>
+    <div className="space-y-4">
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          if (e.target.files[0]) {
+            handleFileUpload(e.target.files[0], "avatar"); // ✅ must be avatar
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+      <p className="text-sm text-gray-500">
+        Max file size: 5MB. Supported formats: JPG, PNG, GIF
+      </p>
+      <button
+        onClick={() => setShowUploadAvatar(false)}
+        className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+{/* Upload Cover */}
+{showUploadCover && (
+  <div className="bg-white shadow rounded-lg p-6 mb-6">
+    <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Cover Image</h3>
+    <div className="space-y-4">
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          if (e.target.files[0]) {
+            handleFileUpload(e.target.files[0], "cover"); // ✅ cover here
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+      <p className="text-sm text-gray-500">
+        Max file size: 5MB. Supported formats: JPG, PNG, GIF
+      </p>
+      <button
+        onClick={() => setShowUploadCover(false)}
+        className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
 
                 {/* Watch History */}
                 {watchHistory.length > 0 && (
