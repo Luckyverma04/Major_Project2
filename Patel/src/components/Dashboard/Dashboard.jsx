@@ -177,6 +177,24 @@ export default function Dashboard() {
     const handleChangePassword = async (e) => {
         e.preventDefault();
         
+        // ADD DEBUGGING AND VALIDATION BEFORE API CALL
+        console.log('Password form data:', passwordForm);
+        
+        if (!passwordForm.currentPassword) {
+            setError('Please enter your current password');
+            return;
+        }
+
+        if (!passwordForm.newPassword) {
+            setError('Please enter a new password');
+            return;
+        }
+
+        if (!passwordForm.confirmPassword) {
+            setError('Please confirm your new password');
+            return;
+        }
+
         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
             setError('New passwords do not match');
             return;
@@ -204,7 +222,7 @@ export default function Dashboard() {
         body: JSON.stringify({
             oldPassword: passwordForm.currentPassword,
             newPassword: passwordForm.newPassword,
-            confirmPassword: passwordForm.confirmPassword  // ADD THIS LINE
+            confirmPassword: passwordForm.confirmPassword
         }),
         credentials: 'include'
     });
@@ -455,20 +473,47 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </div>
+                    
+                    {/* FIXED HEADER SECTION WITH PROPER IMAGE DISPLAY */}
                     <div className="px-6 py-4">
-                        <div className="flex items-center space-x-4">
-                            {user.avatar && (
+                        <div className="flex items-center space-x-6">
+                            {/* Avatar Display */}
+                            <div className="flex-shrink-0">
                                 <img 
-                                    src={user.avatar} 
+                                    src={user.avatar?.url || user.avatar || 'https://via.placeholder.com/80x80/6B7280/FFFFFF?text=Avatar'} 
                                     alt="Avatar" 
-                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-orange-200 shadow-sm"
+                                    onError={(e) => {
+                                        e.target.src = 'https://via.placeholder.com/80x80/6B7280/FFFFFF?text=Avatar';
+                                    }}
                                 />
+                            </div>
+                            
+                            {/* User Info */}
+                            <div className="flex-1">
+                                <p className="text-lg text-gray-700 mb-1">
+                                    Welcome back, <span className="font-semibold text-orange-600">
+                                        {user.name || user.fullName || user.username || user.email || 'User'}
+                                    </span>!
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    {user.email && `Email: ${user.email}`}
+                                </p>
+                            </div>
+                            
+                            {/* Cover Image Display (if exists) */}
+                            {user.coverImage?.url && (
+                                <div className="flex-shrink-0">
+                                    <img 
+                                        src={user.coverImage.url} 
+                                        alt="Cover" 
+                                        className="w-24 h-16 rounded-lg object-cover border border-gray-200 shadow-sm"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                        }}
+                                    />
+                                </div>
                             )}
-                            <p className="text-gray-600">
-                                Welcome back, <span className="font-medium text-orange-600">
-                                    {user.name || user.fullName || user.email || 'User'}
-                                </span>!
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -678,32 +723,6 @@ export default function Dashboard() {
                                         handleFileUpload(e.target.files[0], 'avatar');
                                     }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            />
-                            <p className="text-sm text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
-                            <button
-                                onClick={() => setShowUploadAvatar(false)}
-                                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-200"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Upload Cover Image */}
-                {showUploadCover && (
-                    <div className="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Cover Image</h3>
-                        <div className="space-y-4">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    if (e.target.files[0]) {
-                                        handleFileUpload(e.target.files[0], 'cover');
-                                    }
-                                }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                             <p className="text-sm text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
@@ -804,3 +823,4 @@ export default function Dashboard() {
         </div>
     );
 }
+                        
