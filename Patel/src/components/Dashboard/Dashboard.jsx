@@ -720,7 +720,7 @@ export default function Dashboard() {
                                 accept="image/*"
                                 onChange={(e) => {
                                     if (e.target.files[0]) {
-                                        handleFileUpload(e.target.files[0], 'avatar');
+                                        handleFileUpload(e.target.files[0], 'cover');
                                     }
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
