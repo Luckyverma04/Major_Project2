@@ -826,36 +826,42 @@ useEffect(() => {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-white py-16 border-b">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                {clientCount}+
-              </div>
-              <p className="text-gray-600 font-semibold">Corporate Clients</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                {orderCount}K+
-              </div>
-              <p className="text-gray-600 font-semibold">Orders Delivered</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
-                {discountCount}%
-              </div>
-              <p className="text-gray-600 font-semibold">Bulk Discount</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                {cityCount}+
-              </div>
-              <p className="text-gray-600 font-semibold">Cities Served</p>
-            </div>
-          </div>
+     <section className="bg-white py-16 border-b">
+  <div className="max-w-7xl mx-auto px-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      
+      <div className="text-center">
+        <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          10+
         </div>
-      </section>
+        <p className="text-gray-600 font-semibold">Corporate Clients</p>
+      </div>
+
+      <div className="text-center">
+        <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+          50+
+        </div>
+        <p className="text-gray-600 font-semibold">Orders Delivered</p>
+      </div>
+
+      <div className="text-center">
+        <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+          20% and more
+        </div>
+        <p className="text-gray-600 font-semibold">Bulk Discount</p>
+      </div>
+
+      <div className="text-center">
+        <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          25+
+        </div>
+        <p className="text-gray-600 font-semibold">Cities Served</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 
       {/* Categories Section */}
       <section id="categories-section" className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
