@@ -8,6 +8,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -21,27 +22,27 @@ export default function AdminDashboard() {
   });
 
   // Product form state
-// Update your product form state to include all fields:
-const [productForm, setProductForm] = useState({
-  name: '',
-  description: '',
-  category: '',
-  price: '',
-  bulkPrice: '',
-  minOrder: '',
-  features: '',
-  emoji: '📦',
-  bestseller: false,
-  stockQuantity: '',
-  tags: '',
-  metaDescription: '',
-  image: null
-});
+  const [productForm, setProductForm] = useState({
+    name: '',
+    description: '',
+    category: '',
+    price: '',
+    bulkPrice: '',
+    minOrder: '',
+    features: '',
+    emoji: '📦',
+    bestseller: false,
+    stockQuantity: '',
+    tags: '',
+    metaDescription: '',
+    image: null
+  });
 
   useEffect(() => {
     loadDashboardStats();
     loadUsers();
     loadProducts();
+    loadEnquiries();
   }, []);
 
   const loadDashboardStats = async () => {
@@ -69,18 +70,27 @@ const [productForm, setProductForm] = useState({
   };
 
   const loadProducts = async () => {
-  try {
-    const response = await axios.get("https://patelcropproducts.onrender.com/api/v1/products");
-    
-    console.log("📦 Products fetched:", response.data);
-    
-    // yaha direct array aa rahi hai
-    setProducts(response.data);  
-  } catch (error) {
-    console.error("❌ Error loading products:", error);
-  }
-};
+    try {
+      const response = await axios.get("https://patelcropproducts.onrender.com/api/v1/products");
+      console.log("📦 Products fetched:", response.data);
+      setProducts(response.data);  
+    } catch (error) {
+      console.error("❌ Error loading products:", error);
+    }
+  };
 
+  const loadEnquiries = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('https://patelcropproducts.onrender.com/api/v1/enquiries', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log("📩 Enquiries loaded:", response.data);
+      setEnquiries(response.data.enquiries || []);
+    } catch (error) {
+      console.error('❌ Error loading enquiries:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -105,7 +115,7 @@ const [productForm, setProductForm] = useState({
         { userId, isActive },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      loadUsers(); // Refresh users list
+      loadUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
     }
@@ -118,7 +128,7 @@ const [productForm, setProductForm] = useState({
         { userId, role: newRole },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      loadUsers(); // Refresh users list
+      loadUsers();
     } catch (error) {
       console.error('Error updating user role:', error);
     }
@@ -132,7 +142,7 @@ const [productForm, setProductForm] = useState({
       await axios.delete(`https://patelcropproducts.onrender.com/api/v1/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      loadUsers(); // Refresh users list
+      loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
     }
@@ -146,9 +156,40 @@ const [productForm, setProductForm] = useState({
       await axios.delete(`https://patelcropproducts.onrender.com/api/v1/products/delete/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      loadProducts(); // Refresh products list
+      loadProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
+    }
+  };
+
+  const deleteEnquiry = async (enquiryId) => {
+    if (!window.confirm('Are you sure you want to delete this enquiry?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`https://patelcropproducts.onrender.com/api/v1/enquiries/${enquiryId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      loadEnquiries();
+      alert('Enquiry deleted successfully!');
+    } catch (error) {
+      console.error('❌ Error deleting enquiry:', error);
+      alert('Error deleting enquiry');
+    }
+  };
+
+  const updateEnquiryStatus = async (enquiryId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`https://patelcropproducts.onrender.com/api/v1/enquiries/${enquiryId}`, 
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      loadEnquiries();
+      alert('Enquiry status updated!');
+    } catch (error) {
+      console.error('❌ Error updating enquiry status:', error);
+      alert('Error updating enquiry status');
     }
   };
 
@@ -160,7 +201,7 @@ const [productForm, setProductForm] = useState({
       const token = localStorage.getItem('token');
       await axios.post('https://patelcropproducts.onrender.com/api/v1/users/register', userForm);
       setUserForm({ username: '', email: '', fullName: '', password: '', role: 'user' });
-      loadUsers(); // Refresh users list
+      loadUsers();
       alert('User created successfully!');
     } catch (error) {
       console.error('Error creating user:', error);
@@ -169,108 +210,94 @@ const [productForm, setProductForm] = useState({
       setLoading(false);
     }
   };
-const handleCreateProduct = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  
-  try {
-    const token = localStorage.getItem('token');
-    const formData = new FormData();
+
+  const handleCreateProduct = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     
-    // VALIDATION: Check bulkPrice < price
-    if (parseFloat(productForm.bulkPrice) >= parseFloat(productForm.price)) {
-      alert('Bulk price must be LESS than regular price');
-      setLoading(false);
-      return;
-    }
-
-    // VALIDATION: Check required fields
-    const requiredFields = ['name', 'description', 'category', 'price', 'bulkPrice', 'minOrder'];
-    const missingFields = requiredFields.filter(field => !productForm[field]);
-    
-    if (missingFields.length > 0) {
-      alert(`Missing required fields: ${missingFields.join(', ')}`);
-      setLoading(false);
-      return;
-    }
-
-    // VALIDATION: Check image is provided
-    if (!productForm.image) {
-      alert('Product image is required');
-      setLoading(false);
-      return;
-    }
-
-    console.log("📦 Creating product with validated data...");
-
-    // ✅ FIXED: Append all fields with proper field names
-    formData.append('name', productForm.name);
-    formData.append('description', productForm.description);
-    formData.append('category', productForm.category);
-    formData.append('price', parseFloat(productForm.price));
-    formData.append('bulkPrice', parseFloat(productForm.bulkPrice));
-    formData.append('minOrder', parseInt(productForm.minOrder));
-    
-    // ✅ FIXED: Use 'productImage' instead of 'image'
-    formData.append('productImage', productForm.image); // 🔥 FIELD NAME CHANGED
-    
-    // Append optional fields if they exist
-    if (productForm.features) formData.append('features', productForm.features);
-    if (productForm.emoji) formData.append('emoji', productForm.emoji);
-    formData.append('bestseller', productForm.bestseller.toString());
-    if (productForm.stockQuantity) formData.append('stockQuantity', parseInt(productForm.stockQuantity));
-    if (productForm.tags) formData.append('tags', productForm.tags);
-    if (productForm.metaDescription) formData.append('metaDescription', productForm.metaDescription);
-
-    // Debug: Check FormData contents
-    console.log("📋 FormData contents:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
-
-    // ✅ FIXED: Use proxy URL instead of direct backend URL
-    const response = await axios.post(
-      '/createProduct',  // 🔥 URL CHANGED - Use proxy path
-      formData, 
-      {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      if (parseFloat(productForm.bulkPrice) >= parseFloat(productForm.price)) {
+        alert('Bulk price must be LESS than regular price');
+        setLoading(false);
+        return;
       }
-    );
-    
-    console.log("✅ Product created successfully:", response.data);
-    
-    // Reset form
-    setProductForm({
-      name: '',
-      description: '',
-      category: '',
-      price: '',
-      bulkPrice: '',
-      minOrder: '',
-      features: '',
-      emoji: '📦',
-      bestseller: false,
-      stockQuantity: '',
-      tags: '',
-      metaDescription: '',
-      image: null
-    });
-    
-    loadProducts();
-    alert('Product created successfully!');
-    
-  } catch (error) {
-    console.error('❌ Error creating product:', error);
-    console.error('📡 Response data:', error.response?.data);
-    console.error('🔢 Status:', error.response?.status);
-    alert(error.response?.data?.message || 'Error creating product');
-  } finally {
-    setLoading(false);
-  }
-};
+
+      const requiredFields = ['name', 'description', 'category', 'price', 'bulkPrice', 'minOrder'];
+      const missingFields = requiredFields.filter(field => !productForm[field]);
+      
+      if (missingFields.length > 0) {
+        alert(`Missing required fields: ${missingFields.join(', ')}`);
+        setLoading(false);
+        return;
+      }
+
+      if (!productForm.image) {
+        alert('Product image is required');
+        setLoading(false);
+        return;
+      }
+
+      console.log("📦 Creating product with validated data...");
+
+      formData.append('name', productForm.name);
+      formData.append('description', productForm.description);
+      formData.append('category', productForm.category);
+      formData.append('price', parseFloat(productForm.price));
+      formData.append('bulkPrice', parseFloat(productForm.bulkPrice));
+      formData.append('minOrder', parseInt(productForm.minOrder));
+      formData.append('productImage', productForm.image);
+      
+      if (productForm.features) formData.append('features', productForm.features);
+      if (productForm.emoji) formData.append('emoji', productForm.emoji);
+      formData.append('bestseller', productForm.bestseller.toString());
+      if (productForm.stockQuantity) formData.append('stockQuantity', parseInt(productForm.stockQuantity));
+      if (productForm.tags) formData.append('tags', productForm.tags);
+      if (productForm.metaDescription) formData.append('metaDescription', productForm.metaDescription);
+
+      const response = await axios.post(
+        '/createProduct',
+        formData, 
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      console.log("✅ Product created successfully:", response.data);
+      
+      setProductForm({
+        name: '',
+        description: '',
+        category: '',
+        price: '',
+        bulkPrice: '',
+        minOrder: '',
+        features: '',
+        emoji: '📦',
+        bestseller: false,
+        stockQuantity: '',
+        tags: '',
+        metaDescription: '',
+        image: null
+      });
+      
+      loadProducts();
+      alert('Product created successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error creating product:', error);
+      console.error('📡 Response data:', error.response?.data);
+      console.error('🔢 Status:', error.response?.status);
+      alert(error.response?.data?.message || 'Error creating product');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const searchUsers = async () => {
     try {
@@ -316,6 +343,7 @@ const handleCreateProduct = async (e) => {
                   { id: 'dashboard', label: '📊 Dashboard', icon: '📊' },
                   { id: 'users', label: '👥 User Management', icon: '👥' },
                   { id: 'products', label: '📦 Product Management', icon: '📦' },
+                  { id: 'enquiries', label: '📩 Enquiries', icon: '📩' },
                   { id: 'create-user', label: '➕ Create User', icon: '➕' },
                   { id: 'create-product', label: '🆕 Create Product', icon: '🆕' }
                 ].map((item) => (
@@ -341,7 +369,7 @@ const handleCreateProduct = async (e) => {
           <div className="flex-1">
             {/* Dashboard Stats */}
             {activeTab === 'dashboard' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
                   <div className="flex items-center">
                     <div className="p-3 bg-blue-100 rounded-lg">
@@ -374,6 +402,18 @@ const handleCreateProduct = async (e) => {
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total Orders</p>
                       <p className="text-2xl font-bold text-gray-900">{stats.totalOrders || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-pink-100 rounded-lg">
+                      <span className="text-2xl">📩</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Enquiries</p>
+                      <p className="text-2xl font-bold text-gray-900">{enquiries.length || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -481,45 +521,152 @@ const handleCreateProduct = async (e) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                     {products.map((product) => (
-  <tr key={product._id}>
-    <td className="px-6 py-4 whitespace-nowrap">
-      <div className="flex items-center">
-        {product.productImage?.url && (
-          <img
-            src={product.productImage.url}
-            alt={product.name}
-            className="h-10 w-10 rounded-lg object-cover mr-3"
-          />
-        )}
-        <div>
-          <div className="text-sm font-medium text-gray-900">{product.name}</div>
-          <div className="text-sm text-gray-500 truncate max-w-xs">{product.description}</div>
-        </div>
-      </div>
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-      ₹{product.price}
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-      {product.category}
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-      {product.stockQuantity || 0}
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-      <button
-        onClick={() => deleteProduct(product._id)}
-        className="text-red-600 hover:text-red-900"
-      >
-        Delete
-      </button>
-    </td>
-  </tr>
-))}
-
+                      {products.map((product) => (
+                        <tr key={product._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {product.productImage?.url && (
+                                <img
+                                  src={product.productImage.url}
+                                  alt={product.name}
+                                  className="h-10 w-10 rounded-lg object-cover mr-3"
+                                />
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                                <div className="text-sm text-gray-500 truncate max-w-xs">{product.description}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₹{product.price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {product.category}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {product.stockQuantity || 0}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => deleteProduct(product._id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {/* Enquiries Management */}
+            {activeTab === 'enquiries' && (
+              <div className="bg-white shadow rounded-lg">
+                <div className="p-6 border-b">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-900">Customer Enquiries</h2>
+                    <span className="text-sm text-gray-500">
+                      Total: {enquiries.length} enquiries
+                    </span>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Details</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {enquiries.map((enquiry) => (
+                        <tr key={enquiry._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">{enquiry.name}</div>
+                            <div className="text-sm text-gray-500">{enquiry.email}</div>
+                            <div className="text-sm text-gray-500">{enquiry.phone}</div>
+                          </td>
+                          
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">{enquiry.companyName}</div>
+                            <div className="text-sm text-gray-500">Contact: {enquiry.contactPerson}</div>
+                          </td>
+                          
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">{enquiry.productCategory}</div>
+                            <div className="text-sm text-gray-500">Qty: {enquiry.quantityRequired}</div>
+                            <div className="text-xs text-gray-400 mt-1 max-w-xs truncate">
+                              {enquiry.message}
+                            </div>
+                          </td>
+                          
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <select
+                              value={enquiry.status || 'pending'}
+                              onChange={(e) => updateEnquiryStatus(enquiry._id, e.target.value)}
+                              className={`text-xs border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500 ${
+                                enquiry.status === 'contacted' ? 'bg-green-100 text-green-800' :
+                                enquiry.status === 'resolved' ? 'bg-blue-100 text-blue-800' :
+                                enquiry.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              <option value="pending">⏳ Pending</option>
+                              <option value="contacted">📞 Contacted</option>
+                              <option value="resolved">✅ Resolved</option>
+                              <option value="cancelled">❌ Cancelled</option>
+                            </select>
+                          </td>
+                          
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(enquiry.createdAt).toLocaleDateString()}
+                          </td>
+                          
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`
+Name: ${enquiry.name}
+Email: ${enquiry.email}
+Phone: ${enquiry.phone}
+Company: ${enquiry.companyName}
+Product: ${enquiry.productCategory}
+Quantity: ${enquiry.quantityRequired}
+Message: ${enquiry.message}
+                                `);
+                                alert('Enquiry details copied to clipboard!');
+                              }}
+                              className="text-blue-600 hover:text-blue-900 mr-3"
+                            >
+                              Copy
+                            </button>
+                            <button
+                              onClick={() => deleteEnquiry(enquiry._id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {enquiries.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="text-4xl mb-4">📩</div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No enquiries yet</h3>
+                      <p className="text-gray-500">Customer enquiries will appear here when they submit the quote form.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -595,202 +742,175 @@ const handleCreateProduct = async (e) => {
             )}
 
             {/* Create Product Form */}
-           {activeTab === 'create-product' && (
-  <div className="bg-white shadow rounded-lg p-6">
-    <h2 className="text-xl font-semibold text-gray-900 mb-6">Create New Product</h2>
-    <form onSubmit={handleCreateProduct} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Product Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
-          <input
-            type="text"
-            value={productForm.name}
-            onChange={(e) => setProductForm({...productForm, name: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-          <input
-            type="text"
-            value={productForm.category}
-            onChange={(e) => setProductForm({...productForm, category: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-
-        {/* Regular Price */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Regular Price *</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={productForm.price}
-            onChange={(e) => setProductForm({...productForm, price: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-
-        {/* Bulk Price */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Bulk Price *</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={productForm.bulkPrice}
-            onChange={(e) => setProductForm({...productForm, bulkPrice: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-          <p className="text-xs text-gray-500 mt-1">Must be less than regular price</p>
-        </div>
-
-        {/* Minimum Order */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Order *</label>
-          <input
-            type="number"
-            min="1"
-            value={productForm.minOrder}
-            onChange={(e) => setProductForm({...productForm, minOrder: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-
-        {/* Stock Quantity */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
-          <input
-            type="number"
-            min="0"
-            value={productForm.stockQuantity}
-            onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </div>
-
-        {/* Emoji */}
-        <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
-  <select
-    value={productForm.emoji}
-    onChange={(e) => setProductForm({ ...productForm, emoji: e.target.value })}
-    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-  >
-    <option value="">Select Emoji</option>
-    <option value="👕">👕 T-Shirt</option>
-    <option value="🎒">🎒 Backpack</option>
-    <option value="🖊️">🖊️ Pen</option>
-    <option value="🪪">🪪 ID Card Holder</option>
-    <option value="🍼">🍼 Bottle</option>
-    <option value="🧢">🧢 Cap</option>
-    <option value="💼">💼 Laptop Bag</option>
-    <option value="🖋️">🖋️ Gel Pen</option>
-    <option value="👔">👔 Polo Shirt</option>
-    <option value="🏃‍♂️">🏃‍♂️ Sports Bag</option>
-    <option value="🖍️">🖍️ Marker</option>
-    <option value="👛">👛 Wallet</option>
-    <option value="👚">👚 Casual Shirt</option>
-    <option value="🧳">🧳 Travel Bag</option>
-    <option value="📓">📓 Notebook</option>
-    <option value="⌚">⌚ Smart Watch</option>
-    <option value="🎁">🎁 Gift Set</option>
-  </select>
-</div>
-
-
-        {/* Bestseller */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            checked={productForm.bestseller}
-            onChange={(e) => setProductForm({...productForm, bestseller: e.target.checked})}
-            className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-          />
-          <label className="ml-2 block text-sm text-gray-700">Mark as Bestseller</label>
-        </div>
-
-        {/* Features */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
-          <textarea
-            value={productForm.features}
-            onChange={(e) => setProductForm({...productForm, features: e.target.value})}
-            placeholder="Enter features separated by commas"
-            rows="2"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Separate features with commas</p>
-        </div>
-
-        {/* Tags */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-          <input
-            type="text"
-            value={productForm.tags}
-            onChange={(e) => setProductForm({...productForm, tags: e.target.value})}
-            placeholder="Enter tags separated by commas"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
-        </div>
-
-        {/* Description */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-          <textarea
-            value={productForm.description}
-            onChange={(e) => setProductForm({...productForm, description: e.target.value})}
-            rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-
-        {/* Meta Description */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
-          <textarea
-            value={productForm.metaDescription}
-            onChange={(e) => setProductForm({...productForm, metaDescription: e.target.value})}
-            rows="2"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </div>
-
-        {/* Product Image */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image *</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setProductForm({...productForm, image: e.target.files[0]})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            required
-          />
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 disabled:opacity-50"
-      >
-        {loading ? 'Creating...' : 'Create Product'}
-      </button>
-    </form>
-  </div>
-)}
+            {activeTab === 'create-product' && (
+              <div className="bg-white shadow rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Create New Product</h2>
+                <form onSubmit={handleCreateProduct} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                      <input
+                        type="text"
+                        value={productForm.name}
+                        onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                      <input
+                        type="text"
+                        value={productForm.category}
+                        onChange={(e) => setProductForm({...productForm, category: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Regular Price *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={productForm.price}
+                        onChange={(e) => setProductForm({...productForm, price: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Bulk Price *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={productForm.bulkPrice}
+                        onChange={(e) => setProductForm({...productForm, bulkPrice: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Must be less than regular price</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Order *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={productForm.minOrder}
+                        onChange={(e) => setProductForm({...productForm, minOrder: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={productForm.stockQuantity}
+                        onChange={(e) => setProductForm({...productForm, stockQuantity: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
+                      <select
+                        value={productForm.emoji}
+                        onChange={(e) => setProductForm({ ...productForm, emoji: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Select Emoji</option>
+                        <option value="👕">👕 T-Shirt</option>
+                        <option value="🎒">🎒 Backpack</option>
+                        <option value="🖊️">🖊️ Pen</option>
+                        <option value="🪪">🪪 ID Card Holder</option>
+                        <option value="🍼">🍼 Bottle</option>
+                        <option value="🧢">🧢 Cap</option>
+                        <option value="💼">💼 Laptop Bag</option>
+                        <option value="🖋️">🖋️ Gel Pen</option>
+                        <option value="👔">👔 Polo Shirt</option>
+                        <option value="🏃‍♂️">🏃‍♂️ Sports Bag</option>
+                        <option value="🖍️">🖍️ Marker</option>
+                        <option value="👛">👛 Wallet</option>
+                        <option value="👚">👚 Casual Shirt</option>
+                        <option value="🧳">🧳 Travel Bag</option>
+                        <option value="📓">📓 Notebook</option>
+                        <option value="⌚">⌚ Smart Watch</option>
+                        <option value="🎁">🎁 Gift Set</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={productForm.bestseller}
+                        onChange={(e) => setProductForm({...productForm, bestseller: e.target.checked})}
+                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 block text-sm text-gray-700">Mark as Bestseller</label>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Features</label>
+                      <textarea
+                        value={productForm.features}
+                        onChange={(e) => setProductForm({...productForm, features: e.target.value})}
+                        placeholder="Enter features separated by commas"
+                        rows="2"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Separate features with commas</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                      <input
+                        type="text"
+                        value={productForm.tags}
+                        onChange={(e) => setProductForm({...productForm, tags: e.target.value})}
+                        placeholder="Enter tags separated by commas"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                      <textarea
+                        value={productForm.description}
+                        onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                        rows="3"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                      <textarea
+                        value={productForm.metaDescription}
+                        onChange={(e) => setProductForm({...productForm, metaDescription: e.target.value})}
+                        rows="2"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Product Image *</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setProductForm({...productForm, image: e.target.files[0]})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 disabled:opacity-50"
+                  >
+                    {loading ? 'Creating...' : 'Create Product'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>

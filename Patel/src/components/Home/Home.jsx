@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, ArrowRight, Users, Award, Truck, Phone, Plus, Minus, X, CreditCard, MapPin, User, Mail, Calendar, Building2, Gift, Package, Handshake, Calculator, FileText, Clock, MessageCircle, Instagram, Facebook, Linkedin, Twitter, Sparkles, Zap, Shield, HeadphonesIcon, Menu } from 'lucide-react';
 import axios from 'axios';
-
+// import { createEnquiry } from '../../services/enquiryService';
 // B2B Header Component (integrated)
 const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -214,28 +214,66 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
 
 // B2B Bulk Quote Component
 const BulkQuote = ({ onBackToHome, onSubmitQuote }) => {
-  const [quoteForm, setQuoteForm] = useState({
-    companyName: '',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    gstNumber: '',
-    productCategory: '',
-    quantity: '',
-    customization: '',
-    deliveryDate: '',
-    message: ''
-  });
+    const products = [
+    { id: 1, name: 'Cotton T-Shirts', basePrice: 199, bulkPrice: 149, unit: 'pieces', minOrder: 50, category: 'clothing', emoji: '👕' },
+    { id: 2, name: 'Premium Backpacks', basePrice: 650, bulkPrice: 520, unit: 'pieces', minOrder: 25, category: 'bags', emoji: '🎒' },
+    { id: 3, name: 'Professional Pen Sets', basePrice: 129, bulkPrice: 99, unit: 'sets', minOrder: 100, category: 'stationery', emoji: '🖊️' },
+    { id: 4, name: 'ID Card Holders', basePrice: 65, bulkPrice: 45, unit: 'pieces', minOrder: 200, category: 'accessories', emoji: '🪪' },
+    { id: 5, name: 'Steel Bottles', basePrice: 280, bulkPrice: 220, unit: 'pieces', minOrder: 50, category: 'accessories', emoji: '🍼' },
+    { id: 6, name: 'Stylish Caps', basePrice: 165, bulkPrice: 125, unit: 'pieces', minOrder: 75, category: 'accessories', emoji: '🧢' },
+    { id: 7, name: 'Laptop Bags', basePrice: 950, bulkPrice: 750, unit: 'pieces', minOrder: 20, category: 'bags', emoji: '💼' },
+    { id: 8, name: 'Gel Pen Sets', basePrice: 199, bulkPrice: 149, unit: 'sets', minOrder: 100, category: 'stationery', emoji: '🖋️' },
+    { id: 9, name: 'Polo Shirts', basePrice: 279, bulkPrice: 210, unit: 'pieces', minOrder: 40, category: 'clothing', emoji: '👔' },
+    { id: 10, name: 'Sports Backpacks', basePrice: 850, bulkPrice: 680, unit: 'pieces', minOrder: 30, category: 'bags', emoji: '🏃‍♂️' },
+    { id: 11, name: 'Marker Sets', basePrice: 99, bulkPrice: 75, unit: 'sets', minOrder: 150, category: 'stationery', emoji: '🖍️' },
+    { id: 12, name: 'Leather Wallets', basePrice: 420, bulkPrice: 320, unit: 'pieces', minOrder: 25, category: 'accessories', emoji: '👛' },
+    { id: 13, name: 'Casual Shirts', basePrice: 380, bulkPrice: 285, unit: 'pieces', minOrder: 35, category: 'clothing', emoji: '👚' },
+    { id: 14, name: 'Travel Bags', basePrice: 1150, bulkPrice: 920, unit: 'pieces', minOrder: 15, category: 'bags', emoji: '🧳' },
+    { id: 15, name: 'Notebook Sets', basePrice: 119, bulkPrice: 89, unit: 'sets', minOrder: 200, category: 'stationery', emoji: '📓' },
+    { id: 16, name: 'Smart Watches', basePrice: 1800, bulkPrice: 1440, unit: 'pieces', minOrder: 10, category: 'accessories', emoji: '⌚' }
+  ];
+ const [quoteForm, setQuoteForm] = useState({
+  name: "",
+  email: "",  
+  phone: "",
+  message: "",
+  companyName: "",
+  contactPerson: "",
+  productCategory: "",
+  specificProduct: "",
+  quantityRequired: "",
+  customization: "",
+  gstNumber: ""
+});
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setQuoteForm(prev => ({ ...prev, [name]: value }));
   };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmitQuote(quoteForm);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  const enquiryData = {
+    name: quoteForm.name,
+    email: quoteForm.email,
+    phone: quoteForm.phone,
+    message: `Product: ${quoteForm.specificProduct || quoteForm.productCategory}\n${quoteForm.customization ? `Customization: ${quoteForm.customization}\n\n` : ''}${quoteForm.message}`,
+    companyName: quoteForm.companyName,
+    contactPerson: quoteForm.contactPerson,
+    productCategory: quoteForm.productCategory,
+    quantityRequired: Number(quoteForm.quantityRequired)
   };
+
+  console.log('Form data:', enquiryData);
+  alert('Form submitted! we will contact you in some time.');
+  
+  // Reset form
+  setQuoteForm({
+    name: "", email: "", phone: "", message: "", companyName: "",
+    contactPerson: "", productCategory: "", specificProduct: "", 
+    quantityRequired: "", customization: "", gstNumber: ""
+  });
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -251,177 +289,225 @@ const BulkQuote = ({ onBackToHome, onSubmitQuote }) => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calculator className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-              Request Bulk Quote
-            </h1>
-            <p className="text-gray-600 text-lg">Get customized pricing for your corporate gifting needs</p>
-          </div>
+  <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="text-center mb-8">
+      <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <Calculator className="w-10 h-10 text-white" />
+      </div>
+      <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+        Request Bulk Quote
+      </h1>
+      <p className="text-gray-600 text-lg">Get customized pricing for your bulk corporate orders</p>
+    </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Company Name *
-                </label>
-                <input
-                  type="text"
-                  name="companyName"
-                  value={quoteForm.companyName}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  required
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Contact Person *
-                </label>
-                <input
-                  type="text"
-                  name="contactPerson"
-                  value={quoteForm.contactPerson}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  required
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={quoteForm.email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  required
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Phone *
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={quoteForm.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  required
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  GST Number
-                </label>
-                <input
-                  type="text"
-                  name="gstNumber"
-                  value={quoteForm.gstNumber}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Product Category *
-                </label>
-                <select
-                  name="productCategory"
-                  value={quoteForm.productCategory}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  required
-                >
-                  <option value="">Select Category</option>
-                  <option value="employee-recognition">Employee Recognition Sets</option>
-                  <option value="client-gifts">Client Appreciation Gifts</option>
-                  <option value="festival-hampers">Festival Hampers</option>
-                  <option value="welcome-kits">Welcome Kits</option>
-                  <option value="custom-sets">Custom Gift Sets</option>
-                </select>
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Quantity Required *
-                </label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={quoteForm.quantity}
-                  onChange={handleInputChange}
-                  min="25"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                  placeholder="Minimum 25 pieces"
-                  required
-                />
-              </div>
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                  Delivery Date
-                </label>
-                <input
-                  type="date"
-                  name="deliveryDate"
-                  value={quoteForm.deliveryDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
-                />
-              </div>
-            </div>
-            
-            <div className="group">
-              <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                Customization Requirements
-              </label>
-              <textarea
-                name="customization"
-                value={quoteForm.customization}
-                onChange={handleInputChange}
-                rows="4"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 resize-none"
-                placeholder="Logo branding, custom packaging, personalized messages, etc."
-              />
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Company Name */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Company Name *
+          </label>
+          <input
+            type="text"
+            name="companyName"
+            value={quoteForm.companyName}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          />
+        </div>
 
-            <div className="group">
-              <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
-                Additional Message
-              </label>
-              <textarea
-                name="message"
-                value={quoteForm.message}
-                onChange={handleInputChange}
-                rows="4"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 resize-none"
-                placeholder="Any specific requirements or questions..."
-              />
-            </div>
+        {/* Contact Person */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Contact Person *
+          </label>
+          <input
+            type="text"
+            name="contactPerson"
+            value={quoteForm.contactPerson}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          />
+        </div>
 
-            <div className="text-center pt-6">
-              <button
-                type="submit"
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-12 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 hover:shadow-xl shadow-lg"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <Sparkles className="w-5 h-5" />
-                  Submit Quote Request
-                </span>
-              </button>
-              <p className="text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
-                <Clock className="w-4 h-4" />
-                We'll respond within 24 hours with customized pricing
-              </p>
-            </div>
-          </form>
+        {/* Your Name */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Your Name *
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={quoteForm.name}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          />
+        </div>
+
+        {/* Email */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Email *
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={quoteForm.email}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          />
+        </div>
+
+        {/* Phone */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Phone *
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={quoteForm.phone}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          />
+        </div>
+
+        {/* Product Category - Updated with your products */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Product Category *
+          </label>
+          <select
+            name="productCategory"
+            value={quoteForm.productCategory}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            required
+          >
+            <option value="">Select Product Category</option>
+            <option value="clothing">👕 Clothing (T-Shirts, Polo Shirts, Casual Shirts)</option>
+            <option value="bags">🎒 Bags (Backpacks, Laptop Bags, Travel Bags)</option>
+            <option value="stationery">🖊️ Stationery (Pens, Markers, Notebooks)</option>
+            <option value="accessories">🪪 Accessories (ID Holders, Bottles, Caps, Wallets, Watches)</option>
+            <option value="custom-sets">🎁 Custom Gift Sets</option>
+          </select>
+        </div>
+
+        {/* Specific Product Selection */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Specific Product
+          </label>
+          <select
+            name="specificProduct"
+            value={quoteForm.specificProduct}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+          >
+            <option value="">Select Specific Product</option>
+            {products
+              .filter(product => !quoteForm.productCategory || product.category === quoteForm.productCategory)
+              .map(product => (
+                <option key={product.id} value={product.name}>
+                  {product.emoji} {product.name} - Min. {product.minOrder} {product.unit}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        {/* Quantity Required */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            Quantity Required *
+          </label>
+          <input
+            type="number"
+            name="quantityRequired"
+            value={quoteForm.quantityRequired}
+            onChange={handleInputChange}
+            min="1"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            placeholder="Enter quantity"
+            required
+          />
+          {quoteForm.specificProduct && (
+            <p className="text-xs text-gray-500 mt-1">
+              Minimum order: {products.find(p => p.name === quoteForm.specificProduct)?.minOrder || 1} pieces
+            </p>
+          )}
+        </div>
+
+        {/* GST Number */}
+        <div className="group">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+            GST Number
+          </label>
+          <input
+            type="text"
+            name="gstNumber"
+            value={quoteForm.gstNumber}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300"
+            placeholder="07AABCU9603R1ZM"
+          />
         </div>
       </div>
+      
+      {/* Customization Requirements */}
+      <div className="group">
+        <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+          Customization Requirements
+        </label>
+        <textarea
+          name="customization"
+          value={quoteForm.customization}
+          onChange={handleInputChange}
+          rows="3"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 resize-none"
+          placeholder="Logo branding, custom packaging, personalized messages, color preferences, etc."
+        />
+      </div>
+
+      {/* Additional Message */}
+      <div className="group">
+        <label className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-blue-600 transition-colors">
+          Additional Message *
+        </label>
+        <textarea
+          name="message"
+          value={quoteForm.message}
+          onChange={handleInputChange}
+          rows="4"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 resize-none"
+          placeholder="Any specific requirements, delivery timeline, budget constraints, or questions..."
+          required
+        />
+      </div>
+
+      <div className="text-center pt-6">
+        <button
+          type="submit"
+          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-12 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 hover:shadow-xl shadow-lg"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            Submit Quote Request
+          </span>
+        </button>
+        <p className="text-sm text-gray-500 mt-4 flex items-center justify-center gap-2">
+          <Clock className="w-4 h-4" />
+          We'll respond within 24 hours with customized pricing
+        </p>
+      </div>
+    </form>
+  </div>
+</div>
     </div>
   );
 };
