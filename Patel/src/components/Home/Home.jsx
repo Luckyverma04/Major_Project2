@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, ArrowRight, Users, Award, Truck, Phone, Plus, Minus, X, CreditCard, MapPin, User, Mail, Calendar, Building2, Gift, Package, Handshake, Calculator, FileText, Clock, MessageCircle, Instagram, Facebook, Linkedin, Twitter, Sparkles, Zap, Shield, HeadphonesIcon, Menu } from 'lucide-react';
-
+import axios from 'axios';
 
 // B2B Header Component (integrated)
 const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
@@ -9,7 +9,6 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
   const toggleMenu = () => {
     const newMenuState = !isMenuOpen;
     setIsMenuOpen(newMenuState);
-    // Call the callback to inform parent component about menu state change
     if (onMenuToggle) {
       onMenuToggle(newMenuState);
     }
@@ -17,13 +16,11 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
-    // Inform parent that menu is closed
     if (onMenuToggle) {
       onMenuToggle(false);
     }
   };
 
-  // Scroll to section function
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -513,10 +510,10 @@ const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome,
               </div>
               <div className="divide-y">
                 {cart.map(item => (
-                  <div key={item.id} className="p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div key={item._id || item.id} className="p-6 flex items-center gap-4 hover:bg-gray-50 transition-colors">
                     <div className="relative">
                       <img 
-                        src={item.image} 
+                        src={item.image?.url || '/api/placeholder/300/300'} 
                         alt={item.name}
                         className="w-20 h-20 object-cover rounded-xl shadow-md"
                       />
@@ -527,18 +524,18 @@ const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome,
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{item.name}</h3>
                       <p className="text-green-600 font-bold text-lg">₹{item.bulkPrice} per piece</p>
-                      <p className="text-sm text-gray-500">Min. order: {item.minOrder} pieces</p>
+                      <p className="text-sm text-gray-500">Min. order: {item.minOrder || 25} pieces</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => updateCartQuantity(item.id, Math.max(item.minOrder, item.quantity - 1))}
+                        onClick={() => updateCartQuantity(item._id || item.id, Math.max(item.minOrder || 25, item.quantity - 1))}
                         className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 flex items-center justify-center transition-all transform hover:scale-105"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-12 text-center font-bold text-lg">{item.quantity}</span>
                       <button
-                        onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateCartQuantity(item._id || item.id, item.quantity + 1)}
                         className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 flex items-center justify-center transition-all transform hover:scale-105"
                       >
                         <Plus className="w-4 h-4" />
@@ -547,7 +544,7 @@ const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome,
                     <div className="text-right">
                       <p className="font-bold text-xl">₹{item.bulkPrice * item.quantity}</p>
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item._id || item.id)}
                         className="text-red-500 hover:text-red-700 mt-2 p-2 hover:bg-red-50 rounded-full transition-all"
                       >
                         <X className="w-5 h-5" />
@@ -652,6 +649,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState('home');
   const [cart, setCart] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Animation counters
   const [clientCount, startClientCount] = useCountUp(500);
@@ -659,214 +659,122 @@ export default function Home() {
   const [discountCount, startDiscountCount] = useCountUp(15);
   const [cityCount, startCityCount] = useCountUp(28);
 
-  useEffect(() => {
-    // Start animations when component mounts
-    const timer = setTimeout(() => {
-      startClientCount();
-      startOrderCount();
-      startDiscountCount();
-      startCityCount();
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [startClientCount, startOrderCount, startDiscountCount, startCityCount]);
-
-  // B2B Corporate Gift Sets (replacing individual products)
-  const corporateGiftSets = [
-    { 
-      id: 1, 
-      name: 'Executive Welcome Kit', 
-      bulkPrice: 850, 
-      retailPrice: 1200,
-      category: 'welcome-kits', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.8, 
-      inStock: true, 
-      bestseller: true,
-      minOrder: 25,
-      description: 'Premium welcome package for new hires',
-      includes: ['Branded notebook', 'Metal pen', 'Coffee mug', 'Custom keychain']
-    },
-    { 
-      id: 2, 
-      name: 'Client Appreciation Hamper', 
-      bulkPrice: 1250, 
-      retailPrice: 1800,
-      category: 'client-gifts', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.9, 
-      inStock: true, 
-      bestseller: true,
-      minOrder: 20,
-      description: 'Luxury gift set to thank valued clients',
-      includes: ['Premium chocolates', 'Branded bottle', 'Desktop organizer', 'Thank you card']
-    },
-    { 
-      id: 3, 
-      name: 'Employee Recognition Set', 
-      bulkPrice: 450, 
-      retailPrice: 650,
-      category: 'employee-recognition', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.6, 
-      inStock: true,
-      minOrder: 50,
-      description: 'Perfect for acknowledging team achievements',
-      includes: ['Certificate holder', 'Pen set', 'Badge', 'Congratulation card']
-    },
-    { 
-      id: 4, 
-      name: 'Diwali Corporate Hamper', 
-      bulkPrice: 950, 
-      retailPrice: 1400,
-      category: 'festival-hampers', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.7, 
-      inStock: true,
-      minOrder: 30,
-      description: 'Traditional festival gift for business partners',
-      includes: ['Dry fruits', 'Sweets box', 'Diya set', 'Custom greeting card']
-    },
-    { 
-      id: 5, 
-      name: 'Tech Professional Kit', 
-      bulkPrice: 1150, 
-      retailPrice: 1600,
-      category: 'welcome-kits', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.8, 
-      inStock: true,
-      minOrder: 25,
-      description: 'Modern tech accessories for IT professionals',
-      includes: ['Power bank', 'USB drive', 'Phone stand', 'Cable organizer']
-    },
-    { 
-      id: 6, 
-      name: 'Corporate Wellness Set', 
-      bulkPrice: 750, 
-      retailPrice: 1100,
-      category: 'employee-recognition', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.5, 
-      inStock: true,
-      minOrder: 40,
-      description: 'Promote health and wellness in workplace',
-      includes: ['Water bottle', 'Stress ball', 'Fitness band', 'Wellness guide']
-    },
-    { 
-      id: 7, 
-      name: 'Premium Business Hamper', 
-      bulkPrice: 1850, 
-      retailPrice: 2500,
-      category: 'client-gifts', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.9, 
-      inStock: true,
-      minOrder: 15,
-      description: 'Luxury gifts for VIP clients and partners',
-      includes: ['Premium pen set', 'Leather diary', 'Desk clock', 'Wine accessories']
-    },
-    { 
-      id: 8, 
-      name: 'New Year Corporate Set', 
-      bulkPrice: 650, 
-      retailPrice: 950,
-      category: 'festival-hampers', 
-      image: '/api/placeholder/300/300', 
-      rating: 4.6, 
-      inStock: true,
-      minOrder: 35,
-      description: 'Celebrate new beginnings with business associates',
-      includes: ['Desktop calendar', 'Motivational book', 'Coffee beans', 'Custom card']
-    },
-  ];
-
   const categories = [
-    { id: 'welcome-kits', name: 'Welcome Kits', icon: '🎁', description: 'New employee onboarding gifts', color: 'from-blue-400 to-purple-500' },
-    { id: 'client-gifts', name: 'Client Appreciation', icon: '🤝', description: 'Strengthen business relationships', color: 'from-green-400 to-teal-500' },
-    { id: 'employee-recognition', name: 'Employee Recognition', icon: '🏆', description: 'Reward and motivate teams', color: 'from-yellow-400 to-orange-500' },
-    { id: 'festival-hampers', name: 'Festival Hampers', icon: '🪔', description: 'Seasonal corporate gifts', color: 'from-pink-400 to-red-500' },
+    { id: 'all', name: 'All Products', icon: '🎁', description: 'Complete corporate gift collection', color: 'from-blue-400 to-purple-500' },
+    { id: 'electronics', name: 'Electronics', icon: '📱', description: 'Tech gadgets and devices', color: 'from-green-400 to-teal-500' },
+    { id: 'welcome-kits', name: 'Welcome Kits', icon: '🎁', description: 'New employee onboarding gifts', color: 'from-yellow-400 to-orange-500' },
+    { id: 'client-gifts', name: 'Client Appreciation', icon: '🤝', description: 'Strengthen business relationships', color: 'from-pink-400 to-red-500' },
+    { id: 'employee-recognition', name: 'Employee Recognition', icon: '🏆', description: 'Reward and motivate teams', color: 'from-purple-400 to-indigo-500' },
   ];
 
-  // Cart Functions (modified for B2B)
-  const addToCart = (product) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + product.minOrder }
-            : item
-        );
-      } else {
-        return [...prevCart, { ...product, quantity: product.minOrder }];
+
+  // Fetch products from backend API
+// Home.jsx mein - Products page ki tarah direct URL use karo
+useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Fetching products from API...');
+        
+        const response = await axios.get('https://patelcropproducts.onrender.com/api/v1/products');
+        
+        console.log('📦 API Response:', response.data);
+        
+        if (response.data && Array.isArray(response.data)) {
+          setProducts(response.data);
+          console.log('✅ Products loaded:', response.data.length);
+        } else {
+          console.log('❌ Invalid response format');
+          setProducts([]);
+        }
+      } catch (err) {
+        console.error('❌ Error fetching products:', err);
+        setError('Failed to load products');
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Debug: Check products state
+  useEffect(() => {
+    console.log('🔄 Products state updated:', products);
+  }, [products]);
+
+  // Filter products based on selected category - FIXED
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(product => {
+        const categoryMatch = product.category && product.category.toLowerCase() === selectedCategory;
+        console.log(`Product: ${product.name}, Category: ${product.category}, Match: ${categoryMatch}`);
+        return categoryMatch;
+      });
+
+  // Debug: Check filtered products
+  useEffect(() => {
+    console.log('🔍 Filtered products:', filteredProducts);
+    console.log('🎯 Selected category:', selectedCategory);
+    console.log('📊 Total products:', products.length);
+  }, [filteredProducts, selectedCategory, products]);
+
+
+  // Cart functions
+  const addToCart = (product) => {
+    const existingItem = cart.find(item => item._id === product._id);
+    if (existingItem) {
+      updateCartQuantity(product._id, existingItem.quantity + 1);
+    } else {
+      setCart(prev => [...prev, {
+        ...product,
+        quantity: product.minOrder || 25,
+        bulkPrice: product.bulkPrice || product.price * 0.7 // Default bulk discount if not provided
+      }]);
+    }
   };
 
   const updateCartQuantity = (productId, newQuantity) => {
-    const product = cart.find(item => item.id === productId);
-    if (!product) return;
-    
-    if (newQuantity < product.minOrder) {
-      removeFromCart(productId);
-      return;
-    }
-    
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.id === productId
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
-    );
+    setCart(prev => prev.map(item =>
+      item._id === productId ? { ...item, quantity: Math.max(item.minOrder || 25, newQuantity) } : item
+    ));
   };
 
   const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
-  };
-
-  // Navigation Functions
-  const handleBackToHome = () => {
-    setCurrentPage('home');
-  };
-
-  const handleViewCart = () => {
-    setCurrentPage('cart');
+    setCart(prev => prev.filter(item => item._id !== productId));
   };
 
   const handleRequestQuote = () => {
     setCurrentPage('quote');
   };
 
-  const handleProceedToQuote = (summary) => {
-    setCurrentPage('quote');
+  const handleViewCart = () => {
+    setCurrentPage('cart');
   };
 
-  const handleSubmitQuote = (quoteData) => {
-    // In real app, send to backend
-    alert('✅ Quote request submitted successfully! We\'ll contact you within 24 hours with customized pricing.');
+  const handleBackToHome = () => {
     setCurrentPage('home');
   };
 
-  // Scroll functions
-  const scrollToSection = (sectionId) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }
+  const handleSubmitQuote = (quoteData) => {
+    console.log('Quote submitted:', quoteData);
+    alert('Thank you! Your quote request has been submitted. We will contact you within 24 hours.');
+    setCurrentPage('home');
   };
 
-  const filteredProducts = selectedCategory === 'all' 
-    ? corporateGiftSets 
-    : corporateGiftSets.filter(product => product.category === selectedCategory);
+  const handleProceedToQuote = (cartData) => {
+    setCurrentPage('quote');
+  };
 
-  // Page Routing
+  // Render different pages
+  if (currentPage === 'quote') {
+    return <BulkQuote onBackToHome={handleBackToHome} onSubmitQuote={handleSubmitQuote} />;
+  }
+
   if (currentPage === 'cart') {
     return (
-      <CorporateCart 
+      <CorporateCart
         cart={cart}
         updateCartQuantity={updateCartQuantity}
         removeFromCart={removeFromCart}
@@ -876,720 +784,332 @@ export default function Home() {
     );
   }
 
-  if (currentPage === 'quote') {
-    return (
-      <BulkQuote 
-        onBackToHome={handleBackToHome}
-        onSubmitQuote={handleSubmitQuote}
-      />
-    );
-  }
-
+  // Main Home Page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {/* Integrated B2B Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       <B2BHeader 
-        cart={cart}
+        cart={cart} 
         onViewCart={handleViewCart}
         onRequestQuote={handleRequestQuote}
       />
 
-      {/* Enhanced B2B Hero Section */}
-      <div id="hero-section" className="relative bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 py-24 text-center">
-          <div className="mb-6">
-            <span className="inline-flex items-center gap-2 bg-yellow-400/20 text-yellow-300 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm border border-yellow-400/30">
-              <Sparkles className="w-4 h-4" />
-              India's #1 B2B Corporate Gifting Platform
-            </span>
-          </div>
-          
-          <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
-            Corporate Gifting
-            <span className="block bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent animate-pulse">
-              Made Simple
-            </span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-blue-100 max-w-4xl mx-auto mb-12 leading-relaxed">
-            🚀 Strengthen business relationships with <span className="font-bold text-yellow-300">premium corporate gift sets</span>. 
-            Bulk orders, custom branding, and nationwide delivery for businesses across India.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-            <button 
-              onClick={() => scrollToSection('categories-section')}
-              className="group bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black px-10 py-5 rounded-2xl text-xl font-black transition-all transform hover:scale-105 shadow-2xl hover:shadow-yellow-400/25"
-            >
-              <span className="flex items-center justify-center gap-3">
-                🎁 Browse Corporate Catalog
-                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
-            <button 
-              onClick={handleRequestQuote}
-              className="border-3 border-white hover:bg-white hover:text-blue-900 px-10 py-5 rounded-2xl text-xl font-bold transition-all transform hover:scale-105 backdrop-blur-sm"
-            >
-              <span className="flex items-center justify-center gap-3">
-                <Calculator className="w-6 h-6" />
-                Get Bulk Quote
-              </span>
-            </button>
-          </div>
-          
-          {/* Enhanced Quick Stats with Animations */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all group">
-              <div className="text-4xl font-black mb-2 text-yellow-300">{clientCount}+</div>
-              <div className="text-sm text-blue-200 font-medium">Corporate Clients</div>
-              <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full w-4/5"></div>
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all group">
-              <div className="text-4xl font-black mb-2 text-green-300">{orderCount}+</div>
-              <div className="text-sm text-blue-200 font-medium">Min. Order (pieces)</div>
-              <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-                <div className="bg-gradient-to-r from-green-400 to-teal-500 h-2 rounded-full w-3/5"></div>
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all group">
-              <div className="text-4xl font-black mb-2 text-purple-300">{discountCount}%</div>
-              <div className="text-sm text-blue-200 font-medium">Volume Discounts</div>
-              <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-                <div className="bg-gradient-to-r from-purple-400 to-pink-500 h-2 rounded-full w-full"></div>
-              </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all group">
-              <div className="text-4xl font-black mb-2 text-pink-300">{cityCount}+</div>
-              <div className="text-sm text-blue-200 font-medium">Cities Served</div>
-              <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-                <div className="bg-gradient-to-r from-pink-400 to-red-500 h-2 rounded-full w-5/6"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced B2B Features Section */}
-      <div className="py-20 bg-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-white to-purple-50/50"></div>
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <span className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold mb-4">
-              Why Choose Us
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-              Why Businesses 
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Choose Us</span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Complete B2B corporate gifting solutions with unmatched service quality
+      {/* Hero Section */}
+      <section id="hero-section" className="relative bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 py-24 lg:py-32">
+          <div className="text-center">
+            <h1 className="text-5xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+              Corporate Gifting
+              <span className="block text-3xl lg:text-5xl mt-2">Made Simple</span>
+            </h1>
+                      <p className="text-xl lg:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              Premium corporate gift sets with bulk pricing, custom branding, and nationwide delivery for businesses across India.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Building2 className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Bulk Orders</h3>
-              <p className="text-gray-600 leading-relaxed">Minimum 25 pieces with volume discounts up to 15%</p>
-            </div>
-            <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Gift className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Custom Branding</h3>
-              <p className="text-gray-600 leading-relaxed">Logo printing, custom packaging, and personalized cards</p>
-            </div>
-            <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Truck className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Pan-India Delivery</h3>
-              <p className="text-gray-600 leading-relaxed">Reliable corporate delivery network across all major cities</p>
-            </div>
-            <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                <Handshake className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Dedicated Support</h3>
-              <p className="text-gray-600 leading-relaxed">Account managers and 24/7 business support</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button
+                onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 hover:shadow-xl flex items-center gap-2"
+              >
+                <Gift className="w-5 h-5" />
+                Browse Catalog
+              </button>
+              <button
+                onClick={handleRequestQuote}
+                className="border-2 border-white/30 hover:border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 flex items-center gap-2"
+              >
+                <Calculator className="w-5 h-5" />
+                Get Quote
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Enhanced Corporate Categories Section */}
-      <div id="categories-section" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 scroll-mt-16 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-10 right-10 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      {/* Stats Section */}
+      <section className="bg-white py-16 border-b">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                {clientCount}+
+              </div>
+              <p className="text-gray-600 font-semibold">Corporate Clients</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                {orderCount}K+
+              </div>
+              <p className="text-gray-600 font-semibold">Orders Delivered</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                {discountCount}%
+              </div>
+              <p className="text-gray-600 font-semibold">Bulk Discount</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                {cityCount}+
+              </div>
+              <p className="text-gray-600 font-semibold">Cities Served</p>
+            </div>
+          </div>
         </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full text-sm font-bold mb-4">
-              Gift Categories
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-              Corporate Gift 
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"> Categories</span>
+      </section>
+
+      {/* Categories Section */}
+      <section id="categories-section" className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Corporate Gift Categories
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Curated gift sets for every business occasion and relationship
-            </p>
+            <p className="text-gray-600 text-lg">Perfect solutions for every corporate gifting need</p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {categories.map(category => (
-              <div 
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {categories.map((category) => (
+              <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`group p-8 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-2 ${
+                className={`p-6 rounded-2xl text-left transition-all transform hover:scale-105 hover:shadow-xl border-2 ${
                   selectedCategory === category.id 
-                    ? `bg-gradient-to-br ${category.color} text-white shadow-2xl scale-105` 
-                    : 'bg-white hover:shadow-xl border border-gray-200'
+                    ? 'border-blue-500 bg-white shadow-lg' 
+                    : 'border-gray-200 bg-white/80 hover:border-blue-300'
                 }`}
               >
-                <div className={`text-6xl mb-6 transition-transform group-hover:scale-110 ${
-                  selectedCategory === category.id ? 'animate-bounce' : ''
-                }`}>
+                <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${category.color} flex items-center justify-center text-2xl mb-4`}>
                   {category.icon}
                 </div>
-                <h3 className={`font-bold text-xl mb-3 ${
-                  selectedCategory === category.id ? 'text-white' : 'text-gray-900'
-                }`}>
-                  {category.name}
-                </h3>
-                <p className={`text-sm leading-relaxed ${
-                  selectedCategory === category.id ? 'text-white/90' : 'text-gray-600'
-                }`}>
-                  {category.description}
-                </p>
-                {selectedCategory === category.id && (
-                  <div className="mt-4 flex items-center justify-center">
-                    <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                      SELECTED
-                    </span>
-                  </div>
-                )}
-              </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{category.name}</h3>
+                <p className="text-gray-600">{category.description}</p>
+              </button>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Enhanced Corporate Gift Sets Section */}
-      <div id="products-section" className="py-20 bg-white scroll-mt-16">
+      {/* Products Section */}
+    <section id="products-section" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <span className="inline-block bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-2 rounded-full text-sm font-bold mb-4">
-              Premium Collection
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-              {selectedCategory === 'all' ? (
-                <>Popular Corporate <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Gift Sets</span></>
-              ) : (
-                <>{categories.find(cat => cat.id === selectedCategory)?.name || 'Gift Sets'}</>
-              )}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Corporate Gift Sets
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Premium curated sets with bulk pricing and custom branding options
-            </p>
+            {/* <p className="text-gray-600 text-lg">
+              {loading ? 'Loading...' : `Found ${filteredProducts.length} products`}
+            </p> */}
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-2">
-                {/* Product Image */}
-                <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  {product.bestseller && (
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                      🔥 Bestseller
+          
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading products...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 text-lg">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              >
+                Retry
+              </button>
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filteredProducts.map((product) => (
+                <div key={product._id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 border border-gray-100 overflow-hidden">
+                  <div className="relative">
+                    <img 
+                      src={product.image?.url || '/api/placeholder/300/300'} 
+                      alt={product.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      B2B
                     </div>
-                  )}
-                  <div className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                    B2B
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-
-                {/* Product Info */}
-                <div className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-3 text-lg group-hover:text-blue-600 transition-colors line-clamp-2">
-                    {product.name}
-                  </h3>
                   
-                  {/* Rating and Minimum Order */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                        ))}
+                  <div className="p-6">
+                    <h3 className="font-bold text-gray-900 text-lg mb-2">{product.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {product.description}
+                    </p>
+                    
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-green-600 font-bold text-xl">
+                          ₹{product.bulkPrice || product.price}
+                        </p>
+                        <p className="text-gray-500 text-sm">per piece</p>
                       </div>
-                      <span className="text-sm text-gray-600 font-medium">{product.rating}</span>
                     </div>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-bold">
-                      Min: {product.minOrder} pcs
-                    </span>
+                    
+                    <div className="text-sm text-gray-500 mb-4">
+                      <p>Category: {product.category}</p>
+                      <p>Min. order: {product.minOrder || 25} pieces</p>
+                    </div>
+
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 rounded-xl font-bold transition-all transform hover:scale-105"
+                    >
+                      Add to Corporate Cart
+                    </button>
                   </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-gray-600 mb-4 leading-relaxed">{product.description}</p>
-
-                  {/* What's Included */}
-                  <div className="mb-6">
-                    <p className="text-xs font-bold text-gray-700 mb-2">📦 Package Includes:</p>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      {product.includes.slice(0, 2).map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                          {item}
-                        </div>
-                      ))}
-                      {product.includes.length > 2 && (
-                        <div className="text-blue-600 font-medium">
-                          +{product.includes.length - 2} more items
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Pricing */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Retail Price:</span>
-                      <span className="text-sm line-through text-gray-400">₹{product.retailPrice}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold">Bulk Price:</span>
-                      <span className="text-2xl font-black text-green-600">₹{product.bulkPrice}</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="inline-block bg-gradient-to-r from-yellow-100 to-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold border border-orange-200">
-                        💰 Save ₹{product.retailPrice - product.bulkPrice} per piece
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Add to Cart Button */}
-                  <button
-                    onClick={() => addToCart(product)}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 transform hover:scale-105 hover:shadow-lg"
-                  >
-                    <Package className="w-4 h-4" />
-                    Add {product.minOrder} pieces to Cart
-                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-16">
-            <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-3xl p-12 max-w-5xl mx-auto border border-white/50 shadow-xl">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-3xl font-black text-gray-900 mb-4">
-                Need Custom Corporate Solutions?
-              </h3>
-              <p className="text-gray-600 mb-8 text-lg max-w-3xl mx-auto leading-relaxed">
-                We specialize in custom corporate gift sets, branded merchandise, and bulk orders 
-                for businesses of all sizes. Get personalized quotes and dedicated account management.
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">
+                No products found {selectedCategory !== 'all' ? `in ${selectedCategory} category` : ''}
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              {selectedCategory !== 'all' && (
                 <button 
-                  onClick={handleRequestQuote}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all transform hover:scale-105 hover:shadow-xl"
+                  onClick={() => setSelectedCategory('all')}
+                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
                 >
-                  <Calculator className="w-6 h-6" />
-                  Request Custom Quote
+                  Show All Products
                 </button>
-                <button className="border-3 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105">
-                  📋 Download Catalog
-                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Services Section */}
+      <section id="services-section" className="py-16 bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Our B2B Services
+            </h2>
+            <p className="text-gray-600 text-lg">End-to-end corporate gifting solutions</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-white" />
               </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Custom Branding</h3>
+              <p className="text-gray-600">Logo printing and personalized packaging</p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Pan-India Delivery</h3>
+              <p className="text-gray-600">Free shipping for orders above ₹10,000</p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Handshake className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Bulk Discounts</h3>
+              <p className="text-gray-600">Up to 25% off on volume orders</p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HeadphonesIcon className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">Dedicated Support</h3>
+              <p className="text-gray-600">Account manager for corporate clients</p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Enhanced Corporate Services Section */}
-      <div id="services-section" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <span className="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold mb-4">
-              Complete Solutions
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-              Complete B2B 
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"> Services</span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              End-to-end corporate gifting solutions for every business need
-            </p>
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold mb-4">Ready to Elevate Your Corporate Gifting?</h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Get customized quotes, volume discounts, and premium service for your business needs.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={handleRequestQuote}
+              className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            >
+              <Calculator className="w-5 h-5" />
+              Request Quote
+            </button>
+            <button
+              onClick={handleViewCart}
+              className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              View Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+            </button>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { icon: Award, color: 'from-blue-400 to-blue-600', title: 'Employee Recognition Programs', desc: 'Motivate and reward your team with premium recognition gift sets and achievement packages.' },
-              { icon: Handshake, color: 'from-green-400 to-green-600', title: 'Client Relationship Building', desc: 'Strengthen business partnerships with thoughtfully curated appreciation gifts and hampers.' },
-              { icon: Package, color: 'from-purple-400 to-purple-600', title: 'Corporate Events & Conferences', desc: 'Welcome kits, giveaways, and branded merchandise for corporate events and conferences.' },
-              { icon: Gift, color: 'from-orange-400 to-orange-600', title: 'Seasonal Corporate Campaigns', desc: 'Festival hampers and holiday gifts for Diwali, New Year, and other special occasions.' },
-              { icon: Users, color: 'from-indigo-400 to-indigo-600', title: 'Onboarding & Welcome Packages', desc: 'First impression gift sets for new employees, clients, and business partners.' },
-              { icon: Building2, color: 'from-teal-400 to-teal-600', title: 'Corporate Branding Solutions', desc: 'Custom logo printing, branded packaging, and personalized corporate merchandise.' }
-            ].map((service, idx) => (
-              <div key={idx} className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-100 hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-2">
-                <div className={`w-16 h-16 bg-gradient-to-br ${service.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <service.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-3 text-lg group-hover:text-blue-600 transition-colors">
-                  {service.title}
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {service.desc}
+        </div>
+      </section>
+
+      {/* Footer Section */}
+      <footer id="footer-section" className="bg-slate-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-2xl font-bold mb-4">Patel CorpGifts</h3>
+              <p className="text-gray-400">
+                Your trusted partner for premium corporate gifting solutions across India.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="font-bold text-lg mb-4">Contact Info</h4>
+              <div className="space-y-2 text-gray-400">
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  +91 9399007475
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  info@patelcorpgifts.com
+                </p>
+                <p className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Pan-India Delivery
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced About Section - B2B Focused */}
-      <div id="about-section" className="py-20 bg-white scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            </div>
+            
             <div>
-              <span className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold mb-6">
-                Our Story
-              </span>
-              <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">
-                Your Trusted B2B 
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Corporate Gifting Partner
-                </span>
-              </h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Patel Products has evolved into India's leading B2B corporate gifting solutions provider. 
-                With over 50 years of business experience and three generations of expertise, we understand 
-                what makes corporate gifting meaningful and effective for businesses.
-              </p>
-              <div className="space-y-6">
-                {[
-                  { text: '500+ Corporate clients across India', color: 'bg-green-500' },
-                  { text: 'Volume discounts up to 15% on bulk orders', color: 'bg-blue-500' },
-                  { text: 'Custom branding and packaging services', color: 'bg-purple-500' },
-                  { text: 'Dedicated account management', color: 'bg-orange-500' }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 group">
-                    <div className={`w-10 h-10 ${item.color} rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <span className="text-white text-sm font-bold">✓</span>
-                    </div>
-                    <span className="text-gray-700 font-medium text-lg group-hover:text-gray-900 transition-colors">
-                      {item.text}
-                    </span>
-                  </div>
-                ))}
+              <h4 className="font-bold text-lg mb-4">Quick Links</h4>
+              <div className="space-y-2">
+                <button onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })} className="block text-gray-400 hover:text-white transition-colors">
+                  Products
+                </button>
+                <button onClick={() => document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' })} className="block text-gray-400 hover:text-white transition-colors">
+                  Categories
+                </button>
+                <button onClick={handleRequestQuote} className="block text-gray-400 hover:text-white transition-colors">
+                  Get Quote
+                </button>
               </div>
             </div>
-            <div className="relative">
-              <div className="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-12 rounded-3xl shadow-2xl border border-white/50">
-                <div className="grid grid-cols-2 gap-8 text-center">
-                  <div className="group">
-                    <div className="text-5xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 group-hover:scale-110 transition-transform">
-                      500+
-                    </div>
-                    <div className="text-gray-600 font-medium">Corporate Clients</div>
-                    <div className="w-full bg-white/50 rounded-full h-2 mt-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full w-full"></div>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 group-hover:scale-110 transition-transform">
-                      50K+
-                    </div>
-                    <div className="text-gray-600 font-medium">Gift Sets Delivered</div>
-                    <div className="w-full bg-white/50 rounded-full h-2 mt-2">
-                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full w-4/5"></div>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="text-5xl font-black bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3 group-hover:scale-110 transition-transform">
-                      28+
-                    </div>
-                    <div className="text-gray-600 font-medium">Cities Served</div>
-                    <div className="w-full bg-white/50 rounded-full h-2 mt-2">
-                      <div className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full w-5/6"></div>
-                    </div>
-                  </div>
-                  <div className="group">
-                    <div className="text-5xl font-black bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3 group-hover:scale-110 transition-transform">
-                      98%
-                    </div>
-                    <div className="text-gray-600 font-medium">Client Retention</div>
-                    <div className="w-full bg-white/50 rounded-full h-2 mt-2">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full w-full"></div>
-                    </div>
-                  </div>
-                </div>
+            
+            <div>
+              <h4 className="font-bold text-lg mb-4">Business Hours</h4>
+              <div className="space-y-2 text-gray-400">
+                <p>Mon - Fri: 9:00 AM - 6:00 PM</p>
+                <p>Sat: 10:00 AM - 4:00 PM</p>
+                <p>Sun: Closed</p>
               </div>
-              {/* Floating elements for visual appeal */}
-              <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
-              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-r from-pink-400 to-red-500 rounded-full animate-pulse"></div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Call to Action Section - B2B Focus */}
-      <div className="py-24 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-        </div>
-        
-        <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <div className="mb-8">
-            <span className="inline-flex items-center gap-2 bg-yellow-400/20 text-yellow-300 px-6 py-3 rounded-full text-sm font-bold backdrop-blur-sm border border-yellow-400/30">
-              <Zap className="w-4 h-4" />
-              Ready to Get Started?
-            </span>
           </div>
           
-          <h2 className="text-4xl md:text-6xl font-black mb-6 leading-tight">
-            Ready to Strengthen Your 
-            <span className="block bg-gradient-to-r from-yellow-300 via-orange-300 to-pink-300 bg-clip-text text-transparent">
-              Business Relationships?
-            </span>
-          </h2>
-          
-          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-4xl mx-auto leading-relaxed">
-            🚀 Partner with India's trusted corporate gifting experts. Get bulk pricing, 
-            custom branding, and dedicated support for all your business gifting needs.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-            <button 
-              onClick={handleRequestQuote}
-              className="group bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black px-12 py-5 rounded-2xl font-black text-xl transition-all transform hover:scale-105 shadow-2xl hover:shadow-yellow-400/25"
-            >
-              <span className="flex items-center justify-center gap-3">
-                <Calculator className="w-6 h-6" />
-                Get Bulk Quote Now
-                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
-            <button className="group border-3 border-white hover:bg-white hover:text-blue-900 px-12 py-5 rounded-2xl font-bold text-xl transition-all transform hover:scale-105 backdrop-blur-sm">
-              <span className="flex items-center justify-center gap-3">
-                <Phone className="w-6 h-6" />
-                Call: +91 9399007475
-              </span>
-            </button>
-          </div>
-          
-          {/* Enhanced Trust Indicators */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12 border-t border-blue-400/30">
-            <div className="group text-center">
-              <div className="w-16 h-16 bg-yellow-400/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform border border-yellow-400/30">
-                <Clock className="w-8 h-8 text-yellow-300" />
-              </div>
-              <div className="font-bold text-lg mb-2">Quick Turnaround</div>
-              <div className="text-blue-200 text-sm">5-7 business days delivery nationwide</div>
-            </div>
-            <div className="group text-center">
-              <div className="w-16 h-16 bg-green-400/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform border border-green-400/30">
-                <FileText className="w-8 h-8 text-green-300" />
-              </div>
-              <div className="font-bold text-lg mb-2">GST Invoicing</div>
-              <div className="text-blue-200 text-sm">Proper B2B documentation & compliance</div>
-            </div>
-            <div className="group text-center">
-              <div className="w-16 h-16 bg-purple-400/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform border border-purple-400/30">
-                <Shield className="w-8 h-8 text-purple-300" />
-              </div>
-              <div className="font-bold text-lg mb-2">Quality Guarantee</div>
-              <div className="text-blue-200 text-sm">100% satisfaction assured or money back</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Footer Section */}
-      <footer id="footer-section" className="bg-gray-900 text-white py-16 scroll-mt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {/* Company Info */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Gift className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Patel CorpGifts
-                  </h3>
-                  <p className="text-xs text-gray-400">B2B Solutions</p>
-                </div>
-              </div>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                India's leading B2B corporate gifting platform. 50+ years of experience in strengthening business relationships through thoughtful gifting.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors">
-                  <Linkedin className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors">
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-pink-600 hover:bg-pink-700 rounded-full flex items-center justify-center transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-blue-800 hover:bg-blue-900 rounded-full flex items-center justify-center transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 className="text-lg font-bold mb-6">Corporate Services</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Bulk Gift Sets</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Custom Branding</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Employee Recognition</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Client Appreciation</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Festival Hampers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Welcome Kits</a></li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h4 className="text-lg font-bold mb-6">Support</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Get Quote</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Track Order</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Bulk Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Custom Solutions</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Account Management</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-              </ul>
-            </div>
-
-            {/* Contact Info */}
-            <div>
-              <h4 className="text-lg font-bold mb-6">Contact Us</h4>
-              <div className="space-y-4 text-gray-400">
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-green-400" />
-                  <div>
-                    <p className="font-medium text-white">+91 9399007475</p>
-                    <p className="text-xs">24/7 Business Support</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-blue-400" />
-                  <div>
-                    <p className="font-medium text-white">corp@patelgifts.com</p>
-                    <p className="text-xs">B2B Inquiries</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-red-400" />
-                  <div>
-                    <p className="font-medium text-white">Mumbai, India</p>
-                    <p className="text-xs">Pan-India Delivery</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-6 p-4 bg-gradient-to-r from-green-800/50 to-blue-800/50 rounded-xl border border-green-700/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <HeadphonesIcon className="w-5 h-5 text-green-400" />
-                  <span className="font-bold text-green-400">Enterprise Support</span>
-                </div>
-                <p className="text-xs text-gray-300">Dedicated account managers for bulk orders</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="border-t border-gray-800 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-gray-400 text-sm">
-                © 2024 Patel CorpGifts. All rights reserved. | GST: 27XXXXX1234X1ZX
-              </div>
-              <div className="flex items-center gap-6 text-sm text-gray-400">
-                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-white transition-colors">B2B Terms</a>
-              </div>
-            </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 Patel CorpGifts. All rights reserved.</p>
           </div>
         </div>
       </footer>
-
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 z-50 space-y-3">
-        <button
-          onClick={handleRequestQuote}
-          className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white p-4 rounded-full shadow-2xl hover:shadow-green-500/25 transition-all transform hover:scale-110"
-        >
-          <Calculator className="w-6 h-6" />
-          <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-black text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Get Quote
-          </span>
-        </button>
-        
-        <button className="group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white p-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all transform hover:scale-110">
-          <MessageCircle className="w-6 h-6" />
-          <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-black text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Chat Support
-          </span>
-        </button>
-      </div>
-
-      {/* Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .line-clamp-2 {
-          overflow: hidden;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-        }
-      `}</style>
     </div>
   );
 }

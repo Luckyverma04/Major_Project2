@@ -18,7 +18,7 @@ import BulkOrderPage from './components/Bulkorder/Bulkorder';
 import Product from './components/Product/Product';
 import AdminPanel from './components/Admin/AdminPanel';
 import Dashboard from './components/Dashboard/Dashboard';
-
+import AdminDashboard from './components/Admin/AdminDashboard.jsx';
 // Tailwind Test Component
 function TailwindTest() {
   return (
@@ -60,6 +60,9 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'admin', element: <AdminPanel /> },
       { path: 'test', element: <TailwindTest /> }, // ✅ Tailwind test route
+           { path: 'admin/dashboard', element: <AdminDashboard /> },
+             { path: 'admin/users', element: <AdminDashboard /> },
+      { path: 'admin/products', element: <AdminDashboard /> },
     ],
   },
 ]);

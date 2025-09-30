@@ -80,7 +80,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900">Email Us</h3>
-                                    <p className="text-gray-600">info@patelproducts.com</p>
+                                    <p className="text-gray-600">lv001490@gmail.com</p>
                                     <p className="text-sm text-gray-500 mt-1">We respond within 24 hours</p>
                                 </div>
                             </div>
@@ -192,7 +192,7 @@ export default function Contact() {
                                         required
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="your.email@example.com"
+                                        placeholder="lv001490@gmail.com"
                                         className="w-full py-3 px-4 rounded-lg bg-white border border-gray-300 text-gray-800 font-semibold focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none transition-all"
                                     />
                                 </div>
