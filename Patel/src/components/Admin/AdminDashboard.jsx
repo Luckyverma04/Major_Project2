@@ -680,15 +680,33 @@ const handleCreateProduct = async (e) => {
 
         {/* Emoji */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
-          <input
-            type="text"
-            value={productForm.emoji}
-            onChange={(e) => setProductForm({...productForm, emoji: e.target.value})}
-            placeholder="📦"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
-        </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
+  <select
+    value={productForm.emoji}
+    onChange={(e) => setProductForm({ ...productForm, emoji: e.target.value })}
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+  >
+    <option value="">Select Emoji</option>
+    <option value="👕">👕 T-Shirt</option>
+    <option value="🎒">🎒 Backpack</option>
+    <option value="🖊️">🖊️ Pen</option>
+    <option value="🪪">🪪 ID Card Holder</option>
+    <option value="🍼">🍼 Bottle</option>
+    <option value="🧢">🧢 Cap</option>
+    <option value="💼">💼 Laptop Bag</option>
+    <option value="🖋️">🖋️ Gel Pen</option>
+    <option value="👔">👔 Polo Shirt</option>
+    <option value="🏃‍♂️">🏃‍♂️ Sports Bag</option>
+    <option value="🖍️">🖍️ Marker</option>
+    <option value="👛">👛 Wallet</option>
+    <option value="👚">👚 Casual Shirt</option>
+    <option value="🧳">🧳 Travel Bag</option>
+    <option value="📓">📓 Notebook</option>
+    <option value="⌚">⌚ Smart Watch</option>
+    <option value="🎁">🎁 Gift Set</option>
+  </select>
+</div>
+
 
         {/* Bestseller */}
         <div className="flex items-center">
