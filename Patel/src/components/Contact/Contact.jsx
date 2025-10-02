@@ -30,7 +30,7 @@ export default function Contact() {
             {/* Header Section */}
             <div className="bg-gradient-to-br from-indigo-50 to-blue-100 py-16">
                 <div className="max-w-6xl mx-auto px-6 text-center">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Patel Products</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact TrazooProducts</h1>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                         We'd love to hear from you! Get in touch with our family business for any inquiries, 
                         product information, or support needs.

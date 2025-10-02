@@ -10,7 +10,7 @@ export default function About() {
                     <div className="md:w-5/12 lg:w-5/12">
                         <img
                             src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=500&fit=crop"
-                            alt="Corporate gifting solutions by Patel Products"
+                            alt="Corporate gifting solutions by TrazooProducts"
                             className="w-full rounded-2xl shadow-lg"
                         />
                     </div>
@@ -19,7 +19,7 @@ export default function About() {
                             Your Trusted B2B Corporate Gifting Partner
                         </h1>
                         <p className="mt-6 text-gray-600 text-lg leading-relaxed">
-                            Patel Products has evolved from a family business into India's leading B2B corporate gifting 
+                            Trazoo Products has evolved from a family business into India's leading B2B corporate gifting 
                             solutions provider. We help businesses strengthen relationships through thoughtfully curated 
                             gift sets and premium corporate hampers.
                         </p>
@@ -49,7 +49,7 @@ export default function About() {
 
                 {/* Why Choose Us for Corporate Gifting */}
                 <div className="mb-16">
-                    <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Why Businesses Choose Patel Products</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Why Businesses Choose TrazooProducts</h2>
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="text-center">
                             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -196,7 +196,7 @@ export default function About() {
                 <div className="text-center bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-12">
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">Partner With Us for Corporate Gifting Success</h2>
                     <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                        Join 500+ businesses who trust Patel Products for their corporate gifting needs. 
+                        Join 50+ businesses who trust TrazooProducts for their corporate gifting needs. 
                         Experience the perfect blend of tradition, quality, and modern B2B service.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -17,7 +17,7 @@ export default function Footer() {
                 <span className="text-xl font-bold">PP</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold">Patel Products</h3>
+                <h3 className="text-xl font-bold">Trazoo Products</h3>
                 <p className="text-gray-400 text-sm">Quality Products for Everyone</p>
               </div>
             </div>
@@ -42,7 +42,7 @@ export default function Footer() {
               <div className="flex items-center text-gray-300">
                 <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
                 <a href="mailto:info@patelproducts.com" className="text-sm hover:text-blue-400 transition-colors">
-                  info@patelproducts.com
+                  info@trazooproducts.com
                 </a>
               </div>
             </div>
@@ -238,7 +238,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
             <div className="mb-4 md:mb-0">
-              <p>&copy; {currentYear} Patel Products. All rights reserved.</p>
+              <p>&copy; {currentYear} Trazoo Products. All rights reserved.</p>
               <p>Family-owned business serving customers with quality products since 2014.</p>
             </div>
             

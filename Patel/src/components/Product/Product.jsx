@@ -128,7 +128,7 @@ const Products = ({ onBackToHome, addToCart }) => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900">
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
-        <h1 className="text-4xl text-white font-bold mb-6">Patel Products Catalog</h1>
+        <h1 className="text-4xl text-white font-bold mb-6">TrazooProducts Catalog</h1>
 
         {/* Search + Filter */}
         <div className="flex gap-4 mb-6">

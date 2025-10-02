@@ -47,7 +47,7 @@ import { ShoppingCart, Star, ArrowRight, Users, Award,
              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                <span className="text-white font-bold text-sm">B2B</span>
              </div>
-             <span>Patel CorpGifts</span>
+             <span>TrazooGifts</span>
            </div>
  
            {/* Desktop Navigation Links */}
@@ -1314,8 +1314,8 @@ const addToCart = (product) => {
                 </span>
               </h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Patel Products has evolved into India's leading B2B corporate gifting solutions provider. 
-                With over 50 years of business experience and three generations of expertise, we understand 
+                TrazooProducts has evolved into India's leading B2B corporate gifting solutions provider. 
+                With over 2 years of business experience and three generations of expertise, we understand 
                 what makes corporate gifting meaningful and effective for businesses.
               </p>
               <div className="space-y-6">
@@ -1472,7 +1472,7 @@ const addToCart = (product) => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Patel CorpGifts
+                    TrazooGifts
                   </h3>
                   <p className="text-xs text-gray-400">B2B Solutions</p>
                 </div>
@@ -1563,7 +1563,7 @@ const addToCart = (product) => {
           <div className="border-t border-gray-800 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="text-gray-400 text-sm">
-                © 2024 Patel CorpGifts. All rights reserved. | GST: 27XXXXX1234X1ZX
+                © 2024 TrazooGifts. All rights reserved. | GST: 27XXXXX1234X1ZX
               </div>
               <div className="flex items-center gap-6 text-sm text-gray-400">
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>

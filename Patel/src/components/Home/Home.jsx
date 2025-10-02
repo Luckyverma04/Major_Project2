@@ -42,7 +42,7 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">B2B</span>
             </div>
-            <span>Patel CorpGifts</span>
+            <span>Trazoo</span>
           </div>
 
           {/* Desktop Navigation Links */}
@@ -1148,7 +1148,7 @@ useEffect(() => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">Patel CorpGifts</h3>
+              <h3 className="text-2xl font-bold mb-4">Trazoo</h3>
               <p className="text-gray-400">
                 Your trusted partner for premium corporate gifting solutions across India.
               </p>
@@ -1198,7 +1198,7 @@ useEffect(() => {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Patel CorpGifts. All rights reserved.</p>
+            <p>&copy; 2024 Trazoo. All rights reserved.</p>
           </div>
         </div>
       </footer>

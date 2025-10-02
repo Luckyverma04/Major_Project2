@@ -91,7 +91,7 @@ export default function Header({ onMenuToggle }) {
             >
               <span className="mr-2 text-3xl">🛒</span>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-200">
-                Patel Crop Gifts
+                TrazooProducts
               </span>
             </NavLink>
 
