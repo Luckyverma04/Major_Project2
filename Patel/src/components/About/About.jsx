@@ -31,14 +31,14 @@ export default function About() {
                         
                         <div className="mt-8 flex flex-col sm:flex-row gap-4">
                             <button
-                                onClick={() => window.location.href = "/#corporate-catalog"}
+                                onClick={() => window.location.href = "/#products-section"}
                                 className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300"
                             >
                                 View Corporate Catalog
                                 <Package className="ml-2 w-5 h-5" />
                             </button>
                             <button
-                                onClick={() => window.location.href = "/bulk-quote"}
+                                onClick={() => window.location.href = "/#bulk-quote"}
                                 className="inline-flex items-center px-6 py-3 border-2 border-indigo-600 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-300"
                             >
                                 Request Bulk Quote
@@ -201,20 +201,20 @@ export default function About() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button
-                            onClick={() => window.location.href = "/#corporate-catalog"}
+                            onClick={() => window.location.href = "/#products-section"}
                             className="inline-flex items-center justify-center px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors duration-300"
                         >
                             Browse Corporate Catalog
                             <Package className="ml-2 w-4 h-4" />
                         </button>
                         <button
-                            onClick={() => window.location.href = "/contact-business"}
+                            onClick={() => window.location.href = "/#footer-section"}
                             className="inline-flex items-center justify-center px-8 py-3 border-2 border-indigo-600 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-300"
                         >
                             Get Business Account
                         </button>
                         <button
-                            onClick={() => window.location.href = "/bulk-quote"}
+                            onClick={() => window.location.href = "/#bulk-quote"}
                             className="inline-flex items-center justify-center px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors duration-300"
                         >
                             Request Quote

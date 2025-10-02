@@ -757,6 +757,13 @@ export default function Home() {
   // Fetch products from backend API
 // Home.jsx mein - Products page ki tarah direct URL use karo
 useEffect(() => {
+  const hash = window.location.hash;
+  if (hash === '#bulk-quote') {
+    setCurrentPage('quote');
+    window.history.replaceState(null, null, window.location.pathname);
+  }
+}, []);
+useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
