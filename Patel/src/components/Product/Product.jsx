@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, Filter, Grid, List, Star, ArrowRight, Package, Award, Truck, Shield, ShoppingCart, Eye } from "lucide-react";
+import { useCart } from "../../context/CartContext";
+import { 
+  Search, Filter, Grid, List, Star, ArrowRight, Package, Award, 
+  Truck, Shield, ShoppingCart, Eye 
+} from "lucide-react";
 
-const Products = ({ onBackToHome, addToCart }) => {
+const Products = () => {
+  const { addToCart } = useCart(); // ✅ FIX: Now we use global CartContext
+
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("name");
-  const [viewMode, setViewMode] = useState("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
 
@@ -23,7 +28,7 @@ const Products = ({ onBackToHome, addToCart }) => {
     fetchProducts();
   }, []);
 
-  // ✅ Categories based on fetched products
+  // Categories
   const categories = [
     { id: "all", name: "All Products", count: products.length },
     { id: "clothing", name: "T-Shirts & Shirts", count: products.filter(p => p.category === "clothing").length },
@@ -33,7 +38,7 @@ const Products = ({ onBackToHome, addToCart }) => {
     { id: "electronics", name: "Electronics", count: products.filter(p => p.category === "electronics").length }
   ];
 
-  // ✅ Filtering, searching, sorting
+  // Filtering + Search + Sort
   useEffect(() => {
     let filtered = [...products];
 
@@ -67,7 +72,7 @@ const Products = ({ onBackToHome, addToCart }) => {
     setFilteredProducts(filtered);
   }, [searchTerm, selectedCategory, sortBy, products]);
 
-  // ✅ Product Card (unchanged, bas backend fields use kar rahe hain)
+  // Product Card
   const ProductCard = ({ product }) => (
     <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl group relative overflow-hidden">
       <div className="absolute top-4 right-4 space-y-2">
@@ -87,17 +92,16 @@ const Products = ({ onBackToHome, addToCart }) => {
       <div className="text-center mb-6">
         <div className="w-full h-48 flex items-center justify-center">
           {product.image?.url ? (
-  <img
-    src={product.image.url}
-    alt={product.name}
-    className="h-40 object-contain"
-  />
-) : (
-  <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-4xl">
-    {product.emoji || "📦"}
-  </div>
-)}
-
+            <img
+              src={product.image.url}
+              alt={product.name}
+              className="h-40 object-contain"
+            />
+          ) : (
+            <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-4xl">
+              {product.emoji || "📦"}
+            </div>
+          )}
         </div>
         <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
       </div>
@@ -113,9 +117,9 @@ const Products = ({ onBackToHome, addToCart }) => {
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Add to Cart Button */}
       <button
-        onClick={() => addToCart && addToCart(product)}
+        onClick={() => addToCart(product)}
         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700"
       >
         <ShoppingCart className="w-4 h-4 inline mr-2" />
@@ -127,8 +131,7 @@ const Products = ({ onBackToHome, addToCart }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header */}
-        <h1 className="text-4xl text-white font-bold mb-6">TrazooProducts Catalog</h1>
+        <h1 className="text-4xl text-white font-bold mb-6">Trazoo Products Catalog</h1>
 
         {/* Search + Filter */}
         <div className="flex gap-4 mb-6">
@@ -152,7 +155,7 @@ const Products = ({ onBackToHome, addToCart }) => {
           </select>
         </div>
 
-        {/* Products */}
+        {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product._id} product={product} />

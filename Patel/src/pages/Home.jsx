@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, ArrowRight, Users, Award, Truck, Phone, Plus, Minus, X, CreditCard, MapPin, User, Mail, Calendar, Building2, Gift, Package, Handshake, Calculator, FileText, Clock, MessageCircle, Instagram, Facebook, Linkedin, Twitter, Sparkles, Zap, Shield, HeadphonesIcon, Menu } from 'lucide-react';
 import axios from 'axios';
-// import { createEnquiry } from '../../services/enquiryService';
-// B2B Header Component (integrated)
-const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
+import { useCart } from '../context/CartContext'; // Import useCart hook
+import CheckoutPage from './CheckoutPage';
+import OrderSuccess from './OrderSuccess';
+import MyOrders from './MyOrders';
+
+// B2B Header Component (updated with cart count)
+const B2BHeader = ({ cartCount, onViewCart, onRequestQuote, onViewOrders, onMenuToggle }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -93,6 +97,13 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
           {/* Desktop Auth and Action Buttons */}
           <div className="hidden lg:flex items-center space-x-3">
             <button
+              onClick={onViewOrders}
+              className="px-4 py-2 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-800"
+            >
+              My Orders
+            </button>
+
+            <button
               onClick={onRequestQuote}
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all transform hover:scale-105 hover:shadow-lg"
             >
@@ -106,9 +117,9 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
             >
               <ShoppingCart className="w-5 h-5" />
               Cart
-              {cart.length > 0 && (
+              {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-7 h-7 flex items-center justify-center font-bold animate-bounce">
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  {cartCount}
                 </span>
               )}
             </button>
@@ -181,6 +192,13 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
             {/* Mobile Auth Buttons */}
             <div className="pt-4 mt-4 border-t border-slate-600 space-y-2">
               <button
+                onClick={() => {onViewOrders(); closeMenu();}}
+                className="block w-full text-left px-4 py-3 rounded-lg transition-all duration-300 text-gray-300 hover:text-white hover:bg-slate-700"
+              >
+                My Orders
+              </button>
+
+              <button
                 onClick={() => {onRequestQuote(); closeMenu();}}
                 className="block w-full text-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 px-4 py-3 rounded-lg transition-all duration-300 font-medium text-white"
               >
@@ -197,9 +215,9 @@ const B2BHeader = ({ cart, onViewCart, onRequestQuote, onMenuToggle }) => {
                 <span className="flex items-center justify-center gap-2">
                   <ShoppingCart className="w-4 h-4" />
                   Cart
-                  {cart.length > 0 && (
+                  {cartCount > 0 && (
                     <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                      {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                      {cartCount}
                     </span>
                   )}
                 </span>
@@ -512,8 +530,8 @@ const handleSubmit = async (e) => {
   );
 };
 
-// Corporate Cart Component (modified for B2B)
-const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome, onProceedToQuote }) => {
+// Corporate Cart Component (updated with checkout button)
+const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome, onProceedToCheckout }) => {
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + (item.bulkPrice * item.quantity), 0);
   };
@@ -679,11 +697,11 @@ const CorporateCart = ({ cart, updateCartQuantity, removeFromCart, onBackToHome,
               </div>
 
               <button
-                onClick={() => onProceedToQuote({ subtotal, discount, gst, total, items: cart })}
+                onClick={onProceedToCheckout}
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all transform hover:scale-105 hover:shadow-xl shadow-lg mb-3"
               >
-                <Calculator className="w-5 h-5" />
-                Get Detailed Quote
+                <CreditCard className="w-5 h-5" />
+                Proceed to Checkout
               </button>
 
               <button 
@@ -732,12 +750,15 @@ const useCountUp = (end, duration = 2000) => {
 
 // Main B2B Home Component
 export default function Home() {
+  // Replace static cart with CartContext
+  const { cart, addToCart, updateQuantity, removeFromCart, getCartCount } = useCart();
+  
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState('home');
-  const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [completedOrder, setCompletedOrder] = useState(null);
 
   // Animation counters
   const [clientCount, startClientCount] = useCountUp(500);
@@ -753,17 +774,16 @@ export default function Home() {
     { id: 'employee-recognition', name: 'Employee Recognition', icon: '🏆', description: 'Reward and motivate teams', color: 'from-purple-400 to-indigo-500' },
   ];
 
-
   // Fetch products from backend API
-// Home.jsx mein - Products page ki tarah direct URL use karo
-useEffect(() => {
-  const hash = window.location.hash;
-  if (hash === '#bulk-quote') {
-    setCurrentPage('quote');
-    window.history.replaceState(null, null, window.location.pathname);
-  }
-}, []);
-useEffect(() => {
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#bulk-quote') {
+      setCurrentPage('quote');
+      window.history.replaceState(null, null, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
@@ -813,31 +833,22 @@ useEffect(() => {
     console.log('📊 Total products:', products.length);
   }, [filteredProducts, selectedCategory, products]);
 
-
-  // Cart functions
-  const addToCart = (product) => {
-    const existingItem = cart.find(item => item._id === product._id);
-    if (existingItem) {
-      updateCartQuantity(product._id, existingItem.quantity + 1);
-    } else {
-      setCart(prev => [...prev, {
-        ...product,
-        quantity: product.minOrder || 25,
-        bulkPrice: product.bulkPrice || product.price * 0.7 // Default bulk discount if not provided
-      }]);
-    }
+  // Updated cart functions to use CartContext
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    // Show notification (optional)
+    alert(`${product.name} added to cart!`);
   };
 
-  const updateCartQuantity = (productId, newQuantity) => {
-    setCart(prev => prev.map(item =>
-      item._id === productId ? { ...item, quantity: Math.max(item.minOrder || 25, newQuantity) } : item
-    ));
+  const handleUpdateQuantity = (productId, newQuantity) => {
+    updateQuantity(productId, newQuantity);
   };
 
-  const removeFromCart = (productId) => {
-    setCart(prev => prev.filter(item => item._id !== productId));
+  const handleRemoveFromCart = (productId) => {
+    removeFromCart(productId);
   };
 
+  // Page navigation handlers
   const handleRequestQuote = () => {
     setCurrentPage('quote');
   };
@@ -846,8 +857,28 @@ useEffect(() => {
     setCurrentPage('cart');
   };
 
+  const handleProceedToCheckout = () => {
+    setCurrentPage('checkout');
+  };
+
   const handleBackToHome = () => {
     setCurrentPage('home');
+    setCompletedOrder(null);
+  };
+
+  const handleOrderSuccess = (order) => {
+    setCompletedOrder(order);
+    setCurrentPage('order-success');
+  };
+
+  const handleViewOrders = () => {
+    setCurrentPage('my-orders');
+  };
+
+  const handleViewOrderDetail = (orderId) => {
+    // Navigate to order detail page
+    console.log('View order:', orderId);
+    // You can implement order detail page here
   };
 
   const handleSubmitQuote = (quoteData) => {
@@ -856,11 +887,35 @@ useEffect(() => {
     setCurrentPage('home');
   };
 
-  const handleProceedToQuote = (cartData) => {
-    setCurrentPage('quote');
-  };
+  // Render different pages based on currentPage state
+  if (currentPage === 'checkout') {
+    return (
+      <CheckoutPage
+        onBackToCart={handleViewCart}
+        onOrderSuccess={handleOrderSuccess}
+      />
+    );
+  }
 
-  // Render different pages
+  if (currentPage === 'order-success') {
+    return (
+      <OrderSuccess
+        order={completedOrder}
+        onBackToHome={handleBackToHome}
+        onViewOrders={handleViewOrders}
+      />
+    );
+  }
+
+  if (currentPage === 'my-orders') {
+    return (
+      <MyOrders
+        onBackToHome={handleBackToHome}
+        onViewOrderDetail={handleViewOrderDetail}
+      />
+    );
+  }
+
   if (currentPage === 'quote') {
     return <BulkQuote onBackToHome={handleBackToHome} onSubmitQuote={handleSubmitQuote} />;
   }
@@ -869,10 +924,10 @@ useEffect(() => {
     return (
       <CorporateCart
         cart={cart}
-        updateCartQuantity={updateCartQuantity}
-        removeFromCart={removeFromCart}
+        updateCartQuantity={handleUpdateQuantity}
+        removeFromCart={handleRemoveFromCart}
         onBackToHome={handleBackToHome}
-        onProceedToQuote={handleProceedToQuote}
+        onProceedToCheckout={handleProceedToCheckout} // Changed from onProceedToQuote
       />
     );
   }
@@ -881,9 +936,10 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       <B2BHeader 
-        cart={cart} 
+        cartCount={getCartCount()} // Pass cart count
         onViewCart={handleViewCart}
         onRequestQuote={handleRequestQuote}
+        onViewOrders={handleViewOrders} // Add view orders handler
       />
 
       {/* Hero Section */}
@@ -954,7 +1010,6 @@ useEffect(() => {
     </div>
   </div>
 </section>
-
 
       {/* Categories Section */}
       <section id="categories-section" className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
@@ -1051,7 +1106,7 @@ useEffect(() => {
                     </div>
 
                     <button
-                      onClick={() => addToCart(product)}
+                      onClick={() => handleAddToCart(product)}
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 rounded-xl font-bold transition-all transform hover:scale-105"
                     >
                       Add to Corporate Cart
@@ -1144,7 +1199,7 @@ useEffect(() => {
               className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-5 h-5" />
-              View Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
+              View Cart ({getCartCount()})
             </button>
           </div>
         </div>
@@ -1190,6 +1245,9 @@ useEffect(() => {
                 </button>
                 <button onClick={handleRequestQuote} className="block text-gray-400 hover:text-white transition-colors">
                   Get Quote
+                </button>
+                <button onClick={handleViewOrders} className="block text-gray-400 hover:text-white transition-colors">
+                  My Orders
                 </button>
               </div>
             </div>

@@ -93,6 +93,7 @@ export default function Header({ onMenuToggle }) {
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-200">
                 TrazooProducts
               </span>
+              
             </NavLink>
 
             {/* Admin Status Indicator & Menu Button */}

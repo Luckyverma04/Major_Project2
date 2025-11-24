@@ -1,14 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';   // ✅ बस यही चाहिए
+import './index.css';
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
 
+// 🛒 Cart Context
+import { CartProvider } from './context/CartContext';
+
 // Components
 import Layout from './Layout';
-import Home from './components/Home/Home';
 import About from './components/About/About';
 import Contact from './components/Contact/Contact';
 import User from './components/User/User';
@@ -19,6 +21,8 @@ import Product from './components/Product/Product';
 import AdminPanel from './components/Admin/AdminPanel';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminDashboard from './components/Admin/AdminDashboard.jsx';
+import Home from "./pages/Home";
+
 // Tailwind Test Component
 function TailwindTest() {
   return (
@@ -32,9 +36,11 @@ function TailwindTest() {
   );
 }
 
-// API
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
-axios.interceptors.request.use(config => {
+// 🔧 API Base URL
+axios.defaults.baseURL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+
+axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -44,6 +50,7 @@ axios.interceptors.request.use(config => {
 
 const queryClient = new QueryClient();
 
+// 🔵 Router Setup
 const router = createBrowserRouter([
   {
     path: '/',
@@ -59,18 +66,22 @@ const router = createBrowserRouter([
       { path: 'signup', element: <SignUp /> },
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'admin', element: <AdminPanel /> },
-      { path: 'test', element: <TailwindTest /> }, // ✅ Tailwind test route
-           { path: 'admin/dashboard', element: <AdminDashboard /> },
-             { path: 'admin/users', element: <AdminDashboard /> },
+      { path: 'test', element: <TailwindTest /> },
+      { path: 'admin/dashboard', element: <AdminDashboard /> },
+      { path: 'admin/users', element: <AdminDashboard /> },
       { path: 'admin/products', element: <AdminDashboard /> },
     ],
   },
 ]);
 
+// 🔥 Render
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      {/* 🛒 Wrap whole app inside CartProvider */}
+      <CartProvider>
+        <RouterProvider router={router} />
+      </CartProvider>
     </QueryClientProvider>
   </StrictMode>
 );
